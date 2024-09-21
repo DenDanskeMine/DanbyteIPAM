@@ -61,7 +61,7 @@
                         {% elif interface.status == '2' %} bg-red-500 
                         {% else %} bg-gray-500 {% endif %}
                         text-white font-bold rounded flex items-center justify-center w-8 h-8"
-                        onclick="openModal('{{ interface.name }}')">
+                        onclick="openModal('{{ interface.name }}', '{{ interface.vlan }}', '{{ interface.mac }}')">
                         {{ interface.name.split('/')[-1] }} <!-- Only display the interface number -->
                     </div>
                 {% endfor %}
@@ -74,7 +74,7 @@
                         {% elif interface.status == '2' %} bg-red-500 
                         {% else %} bg-gray-500 {% endif %}
                         text-white font-bold rounded flex items-center justify-center w-8 h-8"
-                        onclick="openModal('{{ interface.name }}')">
+                        onclick="openModal('{{ interface.name }}', '{{ interface.vlan }}', '{{ interface.mac }}')">
                         {{ interface.name.split('/')[-1] }} <!-- Only display the interface number -->
                     </div>
                 {% endfor %}
