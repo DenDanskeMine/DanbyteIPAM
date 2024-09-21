@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block content %}
+
+    
+ <h1>hej</h1>
+
+ <table>
+
+    <tr>
+        <th>Task</th>
+        <th>Due Date</th>
+        <th>Completed</th>
+    </tr>
+
+    {% for task in tasks %}
+    <tr>
+        <td>{{ tasks.title }}</td>
+        <td>{{ tasks.content }}</td>
+        <td>{{ tasks.data_posted }}</td>
+    </tr>
+    {% endfor %}
+
+ </table>
+
+{% endblock %}
+

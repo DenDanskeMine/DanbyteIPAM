@@ -1,0 +1,102 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class="grid grid-cols-3 gap-4 mb-4">
+    <!-- Switch Information -->
+    <div class="flex items-start justify-start h-auto rounded bg-gray-50 dark:bg-gray-800 p-4">
+        <div class="h-auto rounded bg-gray-50 dark:bg-gray-800 p-4">
+            <div class="text-2xl text-gray-400 dark:text-gray-500">
+                Switch Details
+            </div>
+            <div class="mx-auto max-w-7xl px-6 lg:px-8">
+                <dl class="grid grid-cols-1 gap-x-8 gap-y-16 text-center lg:grid-cols-3">
+                    <div class="mx-auto flex max-w-xs flex-col gap-y-4">
+                        <dt class="text-base leading-7 text-gray-600">IP Address</dt>
+                        <dd class="order-first text-1xl font-semibold tracking-tight text-white sm:text-2xl">{{ switch.ip_address }}</dd>
+                    </div>
+                    <div class="mx-auto flex max-w-xs flex-col gap-y-4">
+                        <dt class="text-base leading-7 text-gray-600">Hostname</dt>
+                        <dd class="order-first text-1xl font-semibold tracking-tight text-white sm:text-2xl">{{ switch.hostname }}</dd>
+                    </div>
+                    <div class="mx-auto flex max-w-xs flex-col gap-y-4">
+                        <dt class="text-base leading-7 text-gray-600">Location</dt>
+                        <dd class="order-first text-1xl font-semibold tracking-tight text-white sm:text-2xl">{{ switch.location }}</dd>
+                    </div>
+                </dl>
+            </div>
+        </div>
+    </div>
+
+    <!-- Buttons for refreshing and toggling views -->
+    <div class="flex items-start justify-start h-auto rounded bg-gray-50 dark:bg-gray-800 p-4">
+        <div class="h-auto rounded bg-gray-50 dark:bg-gray-800 p-4">
+            <div class="text-2xl text-gray-400 dark:text-gray-500">
+                Actions
+            </div>
+            <div class="flex justify-center space-x-2 mb-2">
+                <a href="{{ url_for('refresh_snmp_data_for_switch_route', switch_id=switch_id) }}" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-700">Refresh</a>
+                <button class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-700" onclick="toggleViewMode()">Switch View</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Placeholder for future use -->
+    <div class="flex items-center justify-center h-auto rounded bg-gray-50 dark:bg-gray-800 p-4">
+        <p class="text-2xl text-gray-400 dark:text-gray-500">
+            Placeholder for future use
+        </p>
+    </div>
+</div>
+
+<!-- Main grid for the switch layout -->
+<div class="flex flex-wrap gap-x-2 gap-y-2 mt-4"> <!-- Increased gaps between groups -->
+    {% for key, group in grouped_interfaces.items() %}
+    <!-- Grouped Odd and Even Interfaces -->
+    <div class="flex flex-col items-start mb-2"> <!-- Reduced margin-bottom -->
+        <!-- Group name pill -->
+        <div class="bg-blue-200 text-blue-800 text-xs font-semibold mr-2 px-2.5 py-0.5 rounded mb-1">
+            {{ key }}
+        </div>
+        <!-- Odd interfaces (top row) -->
+        <div class="flex space-x-1 mb-1">
+            {% for interface in group.odd %}
+            <div class="status-box 
+                {% if interface.shutdown == '2' %} bg-gray-500 
+                {% elif interface.status == '1' %} bg-green-500 
+                {% elif interface.status == '2' %} bg-red-500 
+                {% else %} bg-gray-500 {% endif %}
+                text-white font-bold rounded flex items-center justify-center w-8 h-8">
+                {{ interface.name.split('/')[-1] }}
+            </div>
+            {% endfor %}
+        </div>
+        <!-- Even interfaces (bottom row, aligned to odd ports) -->
+        <div class="flex space-x-1">
+            {% for interface in group.even %}
+            <div class="status-box 
+                {% if interface.shutdown == '2' %} bg-gray-500 
+                {% elif interface.status == '1' %} bg-green-500 
+                {% elif interface.status == '2' %} bg-red-500 
+                {% else %} bg-gray-500 {% endif %}
+                text-white font-bold rounded flex items-center justify-center w-8 h-8">
+                {{ interface.name.split('/')[-1] }}
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+<script>
+    function toggleViewMode() {
+        let switchView = document.getElementById('switch-view');
+        if (switchView.classList.contains('grid-cols-4')) {
+            switchView.classList.remove('grid-cols-4');
+            switchView.classList.add('grid-cols-2');
+        } else {
+            switchView.classList.remove('grid-cols-2');
+            switchView.classList.add('grid-cols-4');
+        }
+    }
+</script>
+{% endblock %}
