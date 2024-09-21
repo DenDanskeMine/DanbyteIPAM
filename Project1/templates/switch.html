@@ -60,7 +60,8 @@
                         {% elif interface.status == '1' %} bg-green-500 
                         {% elif interface.status == '2' %} bg-red-500 
                         {% else %} bg-gray-500 {% endif %}
-                        text-white font-bold rounded flex items-center justify-center w-8 h-8">
+                        text-white font-bold rounded flex items-center justify-center w-8 h-8"
+                        onclick="openModal('{{ interface.name }}')">
                         {{ interface.name.split('/')[-1] }} <!-- Only display the interface number -->
                     </div>
                 {% endfor %}
@@ -72,7 +73,8 @@
                         {% elif interface.status == '1' %} bg-green-500 
                         {% elif interface.status == '2' %} bg-red-500 
                         {% else %} bg-gray-500 {% endif %}
-                        text-white font-bold rounded flex items-center justify-center w-8 h-8">
+                        text-white font-bold rounded flex items-center justify-center w-8 h-8"
+                        onclick="openModal('{{ interface.name }}')">
                         {{ interface.name.split('/')[-1] }} <!-- Only display the interface number -->
                     </div>
                 {% endfor %}
@@ -81,7 +83,32 @@
     {% endfor %}
 </div>
 
+<!-- Modal Structure -->
+<div id="interfaceModal" class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 hidden">
+    <div class="bg-white dark:bg-gray-800 rounded-lg p-4 max-w-md w-full">
+        <div class="flex justify-between items-center mb-4">
+            <h3 class="text-lg font-semibold">Interface Details</h3>
+            <button onclick="closeModal()" class="text-gray-500 hover:text-gray-700 dark:hover:text-gray-300">&times;</button>
+        </div>
+        <div id="modalContent" class="text-gray-700 dark:text-gray-300">
+            <!-- Interface details will be inserted here -->
+        </div>
+        <div class="flex justify-end mt-4">
+            <button onclick="closeModal()" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-700">Close</button>
+        </div>
+    </div>
+</div>
+
 <script>
+    function openModal(interfaceName) {
+        document.getElementById('modalContent').innerText = interfaceName;
+        document.getElementById('interfaceModal').classList.remove('hidden');
+    }
+
+    function closeModal() {
+        document.getElementById('interfaceModal').classList.add('hidden');
+    }
+
     function toggleViewMode() {
         let switchView = document.getElementById('switch-view');
         if (switchView.classList.contains('grid-cols-4')) {
