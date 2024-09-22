@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+{% block content %}
+
+<form method="POST">
+    <!-- Hidden field to store subnet_id -->
+    <input type="hidden" name="subnet_id" value="{{ ip.subnet_id }}">
+
+    <!-- IP Address Dropdown -->
+    <div class="mb-4">
+        <label for="address" class="block text-sm font-medium text-gray-400 dark:text-gray-300">IP Address</label>
+        <select name="address" id="address" class="mt-1 block w-full bg-gray-700 text-white border-gray-600 rounded-md shadow-sm">
+            {% for ip_address in available_ips %}
+            <option value="{{ ip_address }}" {% if ip_address == ip.address %}selected{% endif %}>{{ ip_address }}</option>
+            {% endfor %}
+        </select>
+    </div>
+
+    <!-- Switch Dropdown -->
+    <div class="mb-4">
+        <label for="switch_id" class="block text-sm font-medium text-gray-400 dark:text-gray-300">Switch</label>
+        <select name="switch_id" id="switch_id" class="mt-1 block w-full bg-gray-700 text-white border-gray-600 rounded-md shadow-sm">
+            <option value="">Select a switch</option>
+            {% for switch in switches %}
+            <option value="{{ switch.id }}" {% if switch.id == ip.switch_id %}selected{% endif %}>{{ switch.hostname }}</option>
+            {% endfor %}
+        </select>
+    </div>
+
+    <!-- MAC Address Field -->
+    <div class="mb-4">
+        <label for="mac" class="block text-sm font-medium text-gray-400 dark:text-gray-300">MAC Address</label>
+        <input type="text" name="mac" id="mac" value="{{ ip.mac }}" class="mt-1 block w-full bg-gray-700 text-white border-gray-600 rounded-md shadow-sm">
+    </div>
+
+    <!-- Hostname Field -->
+    <div class="mb-4">
+        <label for="hostname" class="block text-sm font-medium text-gray-400 dark:text-gray-300">Hostname</label>
+        <input type="text" name="hostname" id="hostname" value="{{ ip.hostname }}" class="mt-1 block w-full bg-gray-700 text-white border-gray-600 rounded-md shadow-sm">
+    </div>
+
+    <!-- Description Field -->
+    <div class="mb-4">
+        <label for="description" class="block text-sm font-medium text-gray-400 dark:text-gray-300">Description</label>
+        <textarea name="description" id="description" class="mt-1 block w-full bg-gray-700 text-white border-gray-600 rounded-md shadow-sm">{{ ip.description }}</textarea>
+    </div>
+
+    <!-- Note Field -->
+    <div class="mb-4">
+        <label for="note" class="block text-sm font-medium text-gray-400 dark:text-gray-300">Note</label>
+        <textarea name="note" id="note" class="mt-1 block w-full bg-gray-700 text-white border-gray-600 rounded-md shadow-sm">{{ ip.note }}</textarea>
+    </div>
+
+    <!-- Location Field -->
+    <div class="mb-4">
+        <label for="location" class="block text-sm font-medium text-gray-400 dark:text-gray-300">Location</label>
+        <input type="text" name="location" id="location" value="{{ ip.location }}" class="mt-1 block w-full bg-gray-700 text-white border-gray-600 rounded-md shadow-sm">
+    </div>
+
+    <!-- Port Field -->
+    <div class="mb-4">
+        <label for="port" class="block text-sm font-medium text-gray-400 dark:text-gray-300">Port</label>
+        <input type="text" name="port" id="port" value="{{ ip.port }}" class="mt-1 block w-full bg-gray-700 text-white border-gray-600 rounded-md shadow-sm">
+    </div>
+
+    <!-- Save Button -->
+    <div class="flex justify-end">
+        <button type="submit" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">Save</button>
+    </div>
+</form>
+
+{% endblock %}
