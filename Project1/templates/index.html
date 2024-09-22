@@ -1,19 +1,22 @@
 {% extends "base.html" %}
 {% block content %}
 
-<div class="p-4 border-2 border-gray-200 border-dashed rounded-lg dark:border-gray-700">
-    <!-- Main Grid for Switches and Subnets -->
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        
+<!-- Container with Border and Padding for Main Content -->
+<div class="p-4 border-2 border-gray-300 rounded-lg dark:border-gray-800 bg-gray-900 dark:bg-gray-800">
+    
+    <!-- Grouping Switches and Subnets in a Flexbox Container -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+
         <!-- Favorite Switches Section -->
-        <div>
-            <div class="text-3xl text-gray-300 dark:text-gray-400 mb-4">
-                Favorite Switches <span class="text-blue-400 dark:text-blue-400"> ({{ count_favorite_switches }}) </span>
+        <div class="bg-gray-800 p-6 rounded-lg shadow-lg border-2 border-blue-200">
+            <div class="text-3xl text-gray-100 mb-6 border-b-2 border-gray-600 pb-2">
+                Favorite Switches 
+                <span class="text-blue-400">({{ count_favorite_switches }})</span>
             </div>
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {% for switch in favorite_switches %}
-                <a href="{{ url_for('show_switch', switch_id=switch.id) }}" class="block bg-gray-800 dark:bg-gray-700 p-4 rounded-lg shadow-sm hover:shadow-lg hover:bg-gray-700 dark:hover:bg-gray-600 transition-all duration-200">
+                <a href="{{ url_for('show_switch', switch_id=switch.id) }}" class="block bg-gray-700 p-4 rounded-lg shadow-md hover:bg-gray-600 transition-all duration-200">
                     <div class="flex items-center space-x-4">
                         <!-- Icon for Switch -->
                         <i class="fa-solid fa-right-left text-blue-400 text-4xl"></i>
@@ -37,17 +40,19 @@
         </div>
 
         <!-- Favorite Subnets Section -->
-        <div>
-            <div class="text-3xl text-gray-300 dark:text-gray-400 mb-4">
-                Favorite Subnets <span class="text-orange-400 dark:text-orange-400"> ({{ count_favorite_subnets }}) </span>
+        <div class="bg-gray-800 p-6 rounded-lg shadow-lg border-2 border-orange-200">
+            <div class="text-3xl text-gray-100 mb-6 border-b-2 border-gray-600 pb-2">
+                Favorite Subnets 
+                <span class="text-orange-400">({{ count_favorite_subnets }})</span>
             </div>
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {% for subnet in favorite_subnets %}
-                <a href="#" class="block bg-gray-800 dark:bg-gray-700 p-4 rounded-lg shadow-sm hover:shadow-lg hover:bg-gray-700 dark:hover:bg-gray-600 transition-all duration-200">
+                <a href="#" class="block bg-gray-700 p-4 rounded-lg shadow-md hover:bg-gray-600 transition-all duration-200">
                     <div class="flex items-center space-x-4">
                         <!-- Icon for Subnet -->
                         <i class="fa-solid fa-diagram-project text-orange-400 text-4xl"></i>
+
                         <!-- Subnet Information -->
                         <div class="text-left">
                             <div class="text-xl font-medium text-white">{{ subnet.name }}</div>
@@ -60,49 +65,47 @@
         </div>
         
     </div>
-</div>
 
-<!-- Favorite IPs Section -->
-<div>
-    <div class="text-3xl text-gray-300 dark:text-gray-400 mb-4">
-        Favorite IPs <span class="text-green-400 dark:text-green-400"> ({{ count_favorite_ips }}) </span>
-    </div>
- 
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {% for ip in favorite_ips %}
-        <a href="{{ url_for('edit_ip', ip_id=ip.id, subnet_id=ip.subnet_id) }}" class="block bg-gray-800 dark:bg-gray-700 p-4 rounded-lg shadow-sm hover:shadow-lg hover:bg-gray-700 dark:hover:bg-gray-600 transition-all duration-200">
-           <div class="flex items-center space-x-4 justify-between">
-                <div class="flex items-center space-x-4">
-                    <!-- Conditional Icon for IP based on status -->
-                    {% if ip.status == '1' %}
+    <!-- Favorite IPs Section -->
+    <div class="bg-gray-800 p-6 rounded-lg shadow-lg border-2 border-green-200">
+        <div class="text-3xl text-gray-100 mb-6 border-b-2 border-gray-600 pb-2">
+            Favorite IPs 
+            <span class="text-green-400">({{ count_favorite_ips }})</span>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {% for ip in favorite_ips %}
+            <a href="{{ url_for('edit_ip', ip_id=ip.id, subnet_id=ip.subnet_id) }}" class="block bg-gray-700 p-4 rounded-lg shadow-md hover:bg-gray-600 transition-all duration-200">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center space-x-4">
+                        <!-- Conditional Icon for IP based on status -->
+                        {% if ip.status == '1' %}
                         <i class="fa-solid fa-network-wired text-green-400 text-4xl"></i>
-                    {% elif ip.status == '0' %}
+                        {% elif ip.status == '0' %}
                         <i class="fa-solid fa-network-wired text-red-400 text-4xl"></i>
-                    {% elif ip.status == '3' %}
+                        {% elif ip.status == '3' %}
                         <i class="fa-solid fa-network-wired text-yellow-400 text-4xl"></i>
-                    {% else %}
+                        {% else %}
                         <i class="fa-solid fa-network-wired text-gray-400 text-4xl"></i>
-                    {% endif %}
- 
-                    <!-- IP Information -->
-                    <div class="text-left">
-                        <div class="text-xl font-medium text-white">{{ ip.address }}</div>
-                        <div class="text-sm text-gray-400">{{ ip.status }}</div>
+                        {% endif %}
+
+                        <!-- IP Information -->
+                        <div class="text-left">
+                            <div class="text-xl font-medium text-white">{{ ip.address }}</div>
+                            <div class="text-sm text-gray-400">{{ ip.status }}</div>
+                        </div>
                     </div>
+
+                    <!-- Blinking Warning Icon for Red Status -->
+                    {% if ip.status == '0' %}
+                    <i class="fa-solid fa-exclamation-triangle text-red-400 text-xl animate-pulse"></i>
+                    {% endif %}
                 </div>
- 
-                <!-- Blinking Warning Icon for Red Status -->
-                {% if ip.status == '0' %}
-                <i class="fa-solid fa-exclamation-triangle text-red-400 text-xl animate-pulse"></i>
-                {% endif %}
-            </div>
-        </a>
-        {% endfor %}
+            </a>
+            {% endfor %}
+        </div>
     </div>
- </div>
- 
 
-
-
+</div>
 
 {% endblock %}
