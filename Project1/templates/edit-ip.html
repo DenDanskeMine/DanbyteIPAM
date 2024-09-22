@@ -66,6 +66,33 @@
     <div class="flex justify-end">
         <button type="submit" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">Save</button>
     </div>
+  <!-- Resolvable Toggle -->
+  <label class="inline-flex items-center mb-5 cursor-pointer">
+    <input type="checkbox" name="is_resolvable" value="1" class="sr-only peer" {% if ip.is_resolvable == 1 %} checked {% endif %}>
+    <div class="relative w-9 h-5 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600"></div>
+    <span class="ms-3 text-sm font-medium text-gray-900 dark:text-gray-300">Resolvable</span>
+</label>
+
+<!-- Show Status Toggle -->
+<label class="inline-flex items-center mb-5 cursor-pointer">
+    <input type="checkbox" name="show_status" value="1" class="sr-only peer" {% if ip.show_status == 1 %} checked {% endif %}>
+    <div class="relative w-9 h-5 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600"></div>
+    <span class="ms-3 text-sm font-medium text-gray-900 dark:text-gray-300">Show Status</span>
+</label>
+
+<!-- Gateway Toggle -->
+<label class="inline-flex items-center mb-5 cursor-pointer">
+    <input type="checkbox" name="is_gateway" value="1" class="sr-only peer" {% if ip.is_gateway == 1 %} checked {% endif %}>
+    <div class="relative w-9 h-5 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600"></div>
+    <span class="ms-3 text-sm font-medium text-gray-900 dark:text-gray-300">Gateway</span>
+</label>
+<!-- Favorite Toggle -->
+<label class="inline-flex items-center mb-5 cursor-pointer">
+    <input type="checkbox" name="is_favorite" value="1" class="sr-only peer" {% if ip.is_favorite == 1 %} checked {% endif %}>
+    <div class="relative w-9 h-5 bg-gray-200 rounded-full peer dark:bg-gray-700 peer-focus:ring-4 peer-focus:ring-yellow-300 dark:peer-focus:ring-yellow-800 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-yellow-400"></div>
+    <span class="ms-3 text-sm font-medium text-gray-900 dark:text-gray-300">Add to Favorite</span>
+</label>
+
 </form>
 
 {% endblock %}

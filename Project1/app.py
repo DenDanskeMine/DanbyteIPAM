@@ -8,6 +8,10 @@ import logging
 from subnets import get_all_subnets, get_subnet, update_subnet
 from ips import get_ips_for_subnet, get_ip, add_ip_to_subnet, update_ip
 from ipaddress import ip_network
+from get_favorite_subnets import get_favorite_subnets
+from get_favorite_ips import get_favorite_ips
+
+
 
 # Configure logging
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -31,12 +35,19 @@ def inject_switches():
 @app.route('/')
 def index():
     favorite_switches, count_favorite_switches = get_favorite_switch()
-    return render_template('index.html', title='Home', favorite_switches=favorite_switches, count_favorite_switches=count_favorite_switches)
+    favorite_subnets, count_favorite_subnets = get_favorite_subnets()
+    favorite_ips, count_favorite_ips = get_favorite_ips()
 
-@app.route('/tasks')
-def show_tasks():
-    tasks = ['Task 1', 'Task 2', 'Task 3']
-    return render_template('tasks.html', title='Tasks', tasks=tasks)
+    return render_template('index.html', 
+                           title='Home', 
+                           favorite_switches=favorite_switches, 
+                           count_favorite_switches=count_favorite_switches, 
+                           favorite_subnets=favorite_subnets, 
+                           count_favorite_subnets=count_favorite_subnets,
+                           favorite_ips=favorite_ips, 
+                           count_favorite_ips=count_favorite_ips)
+
+
 
 @app.route('/collect_snmp_data', methods=['POST'])
 def collect_snmp_data():

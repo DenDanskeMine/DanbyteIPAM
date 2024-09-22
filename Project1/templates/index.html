@@ -64,41 +64,43 @@
 
 <!-- Favorite IPs Section -->
 <div>
-   <div class="text-3xl text-gray-300 dark:text-gray-400 mb-4">
-       Favorite IPs <span class="text-green-400 dark:text-green-400"> ({{ count_favorite_ips }}) </span>
-   </div>
-
-   <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-       {% for ip in favorite_ips %}
-       <a href="{{ url_for('edit_ip', subnet_id=ip.subnet_id, ip_address=ip.address) }}" class="block bg-gray-800 dark:bg-gray-700 p-4 rounded-lg shadow-sm hover:shadow-lg hover:bg-gray-700 dark:hover:bg-gray-600 transition-all duration-200">           <div class="flex items-center space-x-4 justify-between">
-               <div class="flex items-center space-x-4">
-                   <!-- Conditional Icon for IP based on status -->
-                   {% if ip.status == '1' %}
-                       <i class="fa-solid fa-network-wired text-green-400 text-4xl"></i>
-                   {% elif ip.status == '0' %}
-                       <i class="fa-solid fa-network-wired text-red-400 text-4xl"></i>
-                   {% elif ip.status == '3' %}
-                       <i class="fa-solid fa-network-wired text-yellow-400 text-4xl"></i>
-                   {% else %}
-                       <i class="fa-solid fa-network-wired text-gray-400 text-4xl"></i>
-                   {% endif %}
-
-                   <!-- IP Information -->
-                   <div class="text-left">
-                       <div class="text-xl font-medium text-white">{{ ip.address }}</div>
-                       <div class="text-sm text-gray-400">{{ ip.status }}</div>
-                   </div>
-               </div>
-
-               <!-- Blinking Warning Icon for Red Status -->
-               {% if ip.status == '0' %}
-               <i class="fa-solid fa-exclamation-triangle text-red-400 text-xl animate-pulse"></i>
-               {% endif %}
-           </div>
-       </a>
-       {% endfor %}
-   </div>
-</div>
+    <div class="text-3xl text-gray-300 dark:text-gray-400 mb-4">
+        Favorite IPs <span class="text-green-400 dark:text-green-400"> ({{ count_favorite_ips }}) </span>
+    </div>
+ 
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {% for ip in favorite_ips %}
+        <a href="{{ url_for('edit_ip', ip_id=ip.id, subnet_id=ip.subnet_id) }}" class="block bg-gray-800 dark:bg-gray-700 p-4 rounded-lg shadow-sm hover:shadow-lg hover:bg-gray-700 dark:hover:bg-gray-600 transition-all duration-200">
+           <div class="flex items-center space-x-4 justify-between">
+                <div class="flex items-center space-x-4">
+                    <!-- Conditional Icon for IP based on status -->
+                    {% if ip.status == '1' %}
+                        <i class="fa-solid fa-network-wired text-green-400 text-4xl"></i>
+                    {% elif ip.status == '0' %}
+                        <i class="fa-solid fa-network-wired text-red-400 text-4xl"></i>
+                    {% elif ip.status == '3' %}
+                        <i class="fa-solid fa-network-wired text-yellow-400 text-4xl"></i>
+                    {% else %}
+                        <i class="fa-solid fa-network-wired text-gray-400 text-4xl"></i>
+                    {% endif %}
+ 
+                    <!-- IP Information -->
+                    <div class="text-left">
+                        <div class="text-xl font-medium text-white">{{ ip.address }}</div>
+                        <div class="text-sm text-gray-400">{{ ip.status }}</div>
+                    </div>
+                </div>
+ 
+                <!-- Blinking Warning Icon for Red Status -->
+                {% if ip.status == '0' %}
+                <i class="fa-solid fa-exclamation-triangle text-red-400 text-xl animate-pulse"></i>
+                {% endif %}
+            </div>
+        </a>
+        {% endfor %}
+    </div>
+ </div>
+ 
 
 
 
