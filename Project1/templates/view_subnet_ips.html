@@ -1,0 +1,197 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="p-4 border-2 border-gray-200 border-dashed rounded-lg dark:border-gray-700">
+    <div class="text-3xl text-gray-900 dark:text-gray-100 mb-4">
+        IPs for Subnet {{ subnet.name }}
+    </div>
+    <table class="min-w-full bg-white dark:bg-gray-800">
+        <thead>
+            <tr>
+                <th class="py-2 px-4 border-b border-gray-200 dark:border-gray-700 text-gray-900 dark:text-gray-100 text-left">Status</th>
+                <th class="py-2 px-4 border-b border-gray-200 dark:border-gray-700 text-gray-900 dark:text-gray-100 text-left">IP Address</th>
+                <th class="py-2 px-4 border-b border-gray-200 dark:border-gray-700 text-gray-900 dark:text-gray-100 text-left">Owner</th>
+                <th class="py-2 px-4 border-b border-gray-200 dark:border-gray-700 text-gray-900 dark:text-gray-100 text-right w-24">Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for ip in ips %}
+            <tr>
+                <td class="py-2 px-4 border-b border-gray-200 dark:border-gray-700 text-gray-900 dark:text-gray-100 text-center w-16">
+                    {% if ip.status == '1' %}
+                    <i class="fa-solid fa-network-wired text-green-400 text-xl"></i>
+                    {% elif ip.status == '0' %}
+                    <i class="fa-solid fa-network-wired text-red-400 text-xl"></i>
+                    {% elif ip.status == '3' %}
+                    <i class="fa-solid fa-network-wired text-yellow-400 text-xl"></i>
+                    {% else %}
+                    <i class="fa-solid fa-network-wired text-gray-400 text-xl"></i>
+                    {% endif %}
+                </td>
+                <td class="py-2 px-4 border-b border-gray-200 dark:border-gray-700 text-gray-900 dark:text-gray-100">{{ ip.address }}</td>
+                <td class="py-2 px-4 border-b border-gray-200 dark:border-gray-700 text-gray-900 dark:text-gray-100">{{ ip.owner }}</td>
+                <td class="py-2 px-4 border-b border-gray-200 dark:border-gray-700 text-right">
+                    <!-- Action Buttons -->
+                    <button onclick="editIP('{{ ip.address }}', '{{ ip.status }}', '{{ ip.owner }}')" class="text-blue-500 hover:text-blue-700">
+                        <i class="fa-solid fa-pen"></i>
+                    </button>
+                    <button onclick="toggleDeleteModal('{{ ip.address }}')" class="text-red-500 hover:text-red-700">
+                        <i class="fa-solid fa-trash"></i>
+                    </button>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<!-- Add IP Button -->
+<button onclick="openAddIpModal()" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded mt-4">
+    Add IP
+</button>
+
+<!-- Add IP Modal -->
+<div id="addIpModal" class="fixed inset-0 z-50 hidden bg-gray-900 bg-opacity-75 flex items-center justify-center">
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 w-full max-w-lg">
+        <div class="text-xl font-bold mb-4 text-gray-900 dark:text-white" id="modalTitle">Add New IP</div>
+        <form action="{{ url_for('add_ip', subnet_id=subnet.id) }}" method="POST" id="addIpForm" class="space-y-4">
+            
+            <!-- IP Address Dropdown -->
+            <div class="mb-4">
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-200">IP Address</label>
+                <select name="address" id="address" class="mt-1 w-full bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white p-2 rounded">
+                    {% for ip in available_ips %}
+                    <option value="{{ ip }}">{{ ip }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <!-- Status Field -->
+            <div class="mb-4">
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-200">Status</label>
+                <select name="status" id="status" class="mt-1 w-full bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white p-2 rounded">
+                    <option value="1">Active</option>
+                    <option value="0">Inactive</option>
+                    <option value="3">Pending</option>
+                </select>
+            </div>
+
+            <!-- Owner Field -->
+            <div class="mb-4">
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-200">Owner</label>
+                <input type="text" name="owner" id="owner" class="mt-1 w-full bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white p-2 rounded">
+            </div>
+            <div class="mb-4">
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-200">MAC</label>
+                <input type="text" name="mac" id="mac" class="mt-1 w-full bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white p-2 rounded">
+            </div>
+            <div class="mb-4">
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-200">Description</label>
+                <input type="text" name="description" id="description" class="mt-1 w-full bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white p-2 rounded">
+            </div>
+            <div class="mb-4">
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-200">Note</label>
+                <input type="text" name="note" id="note" class="mt-1 w-full bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white p-2 rounded">
+            </div>
+            <div class="mb-4">
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-200">Switch</label>
+                <select name="switch" id="switch" class="mt-1 w-full bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white p-2 rounded">
+                    <option value="1">add</option>
+                    <option value="0">switches</option>
+                    <option value="3">from DB</option>
+                </select>            
+            </div>
+            <div class="mb-4">
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-200">Device</label>
+                <select name="device" id="device" class="mt-1 w-full bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white p-2 rounded">
+                    <option value="1">add</option>
+                    <option value="0">devices</option>
+                    <option value="3">from DB</option>
+                </select>
+            </div>
+            <div class="mb-4">
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-200">Location</label>
+                <select name="location" id="location" class="mt-1 w-full bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white p-2 rounded">
+                    <option value="1">add</option>
+                    <option value="0">locations</option>
+                    <option value="3">from DB</option>
+                </select>
+            </div>
+            
+
+            <!-- Advanced Fields -->
+            <div class="grid grid-cols-2 gap-4 mb-4">
+                <div class="flex items-center">
+                    <input type="checkbox" name="is_favorite" id="is_favorite" class="mr-2">
+                    <label for="is_favorite" class="text-gray-700 dark:text-gray-200">Favorite</label>
+                </div>
+                <div class="flex items-center">
+                    <input type="checkbox" name="is_nested" id="is_nested" class="mr-2">
+                    <label for="is_nested" class="text-gray-700 dark:text-gray-200">Nested</label>
+                </div>
+                <div class="flex items-center">
+                    <input type="checkbox" name="is_scannable" id="is_scannable" class="mr-2">
+                    <label for="is_scannable" class="text-gray-700 dark:text-gray-200">Scannable</label>
+                </div>
+                <div class="flex items-center">
+                    <input type="checkbox" name="is_resolvable" id="is_resolvable" class="mr-2">
+                    <label for="is_resolvable" class="text-gray-700 dark:text-gray-200">Resolvable</label>
+                </div>
+                <div class="flex items-center">
+                    <input type="checkbox" name="show_status" id="show_status" class="mr-2">
+                    <label for="show_status" class="text-gray-700 dark:text-gray-200">Show Status</label>
+                </div>
+                <div class="flex items-center">
+                    <input type="checkbox" name="is_gateway" id="is_gateway" class="mr-2">
+                    <label for="is_gateway" class="text-gray-700 dark:text-gray-200">Gateway</label>
+                </div>
+            </div>
+
+            <!-- Buttons -->
+            <div class="flex justify-end space-x-4">
+                <button type="button" onclick="closeAddIpModal()" class="bg-gray-500 hover:bg-gray-600 text-white py-2 px-4 rounded">Cancel</button>
+                <button type="submit" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-6 rounded">Save</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Modal for confirming deletion -->
+<div id="deleteModal" class="fixed inset-0 z-50 hidden bg-gray-900 bg-opacity-75 flex items-center justify-center">
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 w-full max-w-lg">
+        <div class="text-xl font-bold mb-4 text-gray-900 dark:text-white">Confirm Deletion</div>
+        <p class="mb-4 text-gray-700 dark:text-gray-200">Are you sure you want to delete this IP address?</p>
+        <form action="" method="POST" id="deleteForm" class="space-y-4">
+            <div class="flex justify-end space-x-4">
+                <button type="button" onclick="toggleDeleteModal()" class="bg-gray-500 hover:bg-gray-600 text-white py-2 px-4 rounded">Cancel</button>
+                <button type="button" onclick="confirmDelete()" class="bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-6 rounded">Delete</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    function openAddIpModal() {
+        document.getElementById('addIpModal').classList.remove('hidden');
+    }
+
+    function closeAddIpModal() {
+        document.getElementById('addIpModal').classList.add('hidden');
+    }
+
+    function toggleDeleteModal(ip = null) {
+        ipToDelete = ip;
+        document.getElementById('deleteModal').classList.toggle('hidden');
+    }
+
+    function confirmDelete() {
+        if (ipToDelete) {
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.action = `/subnet/{{ subnet.id }}/delete_ip/${ipToDelete}`;
+            document.body.appendChild(form);
+            form.submit();
+        }
+    }
+</script>
+
+{% endblock %}

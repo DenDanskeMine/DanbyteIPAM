@@ -50,7 +50,6 @@ def store_snmp_data(switch_id, snmp_data):
         if len(mac_data) > max_mac_length:
             mac_data = mac_data[:max_mac_length]
             logging.warning(f"MAC data truncated for switch_id {switch_id}")
-
         cursor.execute('''
             INSERT INTO SNMP_DATA_SWITCH (switch_id, numOf_int, int_names, int_status, interface_shutdown_status, vlan, mac)
             VALUES (%s, %s, %s, %s, %s, %s, %s)

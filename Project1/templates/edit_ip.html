@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class="p-4 border-2 border-gray-200 border-dashed rounded-lg dark:border-gray-700">
+    <div class="text-3xl text-gray-400 dark:text-gray-500 mb-4">
+        Edit IP: {{ ip.address }}
+    </div>
+
+    <form action="{{ url_for('edit_ip', subnet_id=ip.subnet_id, ip_address=ip.address) }}" method="POST" class="space-y-4">
+
+        <!-- Status Field -->
+        <div class="mb-4">
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-200">Status</label>
+            <input type="text" name="status" value="{{ ip.status }}" class="mt-1 w-full bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white p-2 rounded">
+        </div>
+
+        <!-- Owner Field -->
+        <div class="mb-4">
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-200">Owner</label>
+            <input type="text" name="owner" value="{{ ip.owner }}" class="mt-1 w-full bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white p-2 rounded">
+        </div>
+
+        <!-- Checkbox Switches -->
+        <div class="grid grid-cols-2 gap-4 mb-4">
+            <div class="flex items-center">
+                <input type="checkbox" name="is_favorite" id="is_favorite" class="mr-2" {% if ip.is_favorite %}checked{% endif %}>
+                <label for="is_favorite" class="text-gray-700 dark:text-gray-200">Favorite</label>
+            </div>
+            <div class="flex items-center">
+                <input type="checkbox" name="is_nested" id="is_nested" class="mr-2" {% if ip.is_nested %}checked{% endif %}>
+                <label for="is_nested" class="text-gray-700 dark:text-gray-200">Nested</label>
+            </div>
+            <div class="flex items-center">
+                <input type="checkbox" name="is_scannable" id="is_scannable" class="mr-2" {% if ip.is_scannable %}checked{% endif %}>
+                <label for="is_scannable" class="text-gray-700 dark:text-gray-200">Scannable</label>
+            </div>
+            <div class="flex items-center">
+                <input type="checkbox" name="is_resolvable" id="is_resolvable" class="mr-2" {% if ip.is_resolvable %}checked{% endif %}>
+                <label for="is_resolvable" class="text-gray-700 dark:text-gray-200">Resolvable</label>
+            </div>
+            <div class="flex items-center">
+                <input type="checkbox" name="show_status" id="show_status" class="mr-2" {% if ip.show_status %}checked{% endif %}>
+                <label for="show_status" class="text-gray-700 dark:text-gray-200">Show Status</label>
+            </div>
+        </div>
+
+        <!-- Buttons -->
+        <div class="flex justify-between">
+            <!-- Back to Subnet Button -->
+            <a href="{{ url_for('show_subnet_ips', subnet_id=ip.subnet_id) }}" class="bg-gray-500 hover:bg-gray-600 text-white py-2 px-4 rounded">
+                Back to Subnet
+            </a>
+            <!-- Save Changes Button -->
+            <button type="submit" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-6 rounded">
+                Save Changes
+            </button>
+        </div>
+    </form>
+</div>
+
+{% endblock %}

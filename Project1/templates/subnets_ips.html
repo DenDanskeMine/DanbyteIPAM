@@ -1,0 +1,89 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class="p-4 border-2 border-gray-200 border-dashed rounded-lg dark:border-gray-700">
+    <!-- Subnet IPs Section -->
+    <div class="flex justify-between items-center mb-4">
+        <div class="text-3xl text-gray-400 dark:text-gray-500">
+            IPs in Subnet: {{ subnet.name }}
+        </div>
+        <!-- Add IP Button to trigger modal -->
+        <button onclick="toggleModal()" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
+            Add IP
+        </button>
+    </div>
+
+    <!-- IP Table -->
+    <div class="bg-gray-900 dark:bg-gray-800 p-6 rounded-lg shadow">
+        <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+            <thead>
+                <tr>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-400 dark:text-gray-300 uppercase tracking-wider">IP Address</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-400 dark:text-gray-300 uppercase tracking-wider">Status</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-400 dark:text-gray-300 uppercase tracking-wider">Owner</th>
+                </tr>
+            </thead>
+            <tbody class="bg-gray-900 divide-y divide-gray-200 dark:divide-gray-700">
+                {% for ip in ips %}
+                <tr>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-white">{{ ip.address }}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-400">{{ ip.status }}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-400">{{ ip.owner }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Modal for adding new IP -->
+<div id="ipModal" class="fixed inset-0 z-50 hidden bg-gray-900 bg-opacity-75 flex items-center justify-center">
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 w-full max-w-lg">
+        <div class="text-xl font-bold mb-4 text-gray-900 dark:text-white">Add New IP</div>
+        <form action="{{ url_for('add_ip', subnet_id=subnet.id) }}" method="POST">
+            <!-- IP Address Field -->
+            <div class="mb-4">
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-200">IP Address</label>
+                <input type="text" name="ip_address" class="mt-1 w-full bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white p-2 rounded">
+            </div>
+
+            <!-- Checkbox Switches -->
+            <div class="grid grid-cols-2 gap-4 mb-4">
+                <div class="flex items-center">
+                    <input type="checkbox" name="is_favorite" id="is_favorite" class="mr-2">
+                    <label for="is_favorite" class="text-gray-700 dark:text-gray-200">Favorite</label>
+                </div>
+                <div class="flex items-center">
+                    <input type="checkbox" name="is_nested" id="is_nested" class="mr-2">
+                    <label for="is_nested" class="text-gray-700 dark:text-gray-200">Nested</label>
+                </div>
+                <div class="flex items-center">
+                    <input type="checkbox" name="is_scannable" id="is_scannable" class="mr-2">
+                    <label for="is_scannable" class="text-gray-700 dark:text-gray-200">Scannable</label>
+                </div>
+                <div class="flex items-center">
+                    <input type="checkbox" name="is_resolvable" id="is_resolvable" class="mr-2">
+                    <label for="is_resolvable" class="text-gray-700 dark:text-gray-200">Resolvable</label>
+                </div>
+                <div class="flex items-center">
+                    <input type="checkbox" name="show_status" id="show_status" class="mr-2">
+                    <label for="show_status" class="text-gray-700 dark:text-gray-200">Show Status</label>
+                </div>
+            </div>
+
+            <!-- Buttons -->
+            <div class="flex justify-end space-x-4">
+                <button type="button" onclick="toggleModal()" class="bg-gray-500 hover:bg-gray-600 text-white py-2 px-4 rounded">Cancel</button>
+                <button type="submit" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-6 rounded">Add IP</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    function toggleModal() {
+        document.getElementById('ipModal').classList.toggle('hidden');
+    }
+</script>
+
+{% endblock %}

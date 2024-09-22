@@ -50,18 +50,28 @@ def get_switch_data(switch_id):
         logging.error(f"Missing 'int_names' or 'int_status' in switch data for switch_id {switch_id}")
         return None
 
-    # Split int_names and int_status into lists
+    # Split int_names, int_status, int_shutdown, vlan, and mac into lists
     int_names = switch_data.get('int_names', '').split(',')
     int_status = switch_data.get('int_status', '').split(',')
     int_shutdown = switch_data.get('interface_shutdown_status', '').split(',')
+    vlan = switch_data.get('vlan', '').split(',') if switch_data.get('vlan') else [''] * len(int_names)
+    mac = switch_data.get('mac', '').split(',')
+
+    # Ensure all lists have the same length
+    min_length = min(len(int_names), len(int_status), len(int_shutdown), len(vlan), len(mac))
+    int_names = int_names[:min_length]
+    int_status = int_status[:min_length]
+    int_shutdown = int_shutdown[:min_length]
+    vlan = vlan[:min_length]
+    mac = mac[:min_length]
 
     if len(int_names) != len(int_status) or len(int_names) != len(int_shutdown):
         logging.error(f"Mismatch between int_names, int_status, and int_shutdown lengths for switch_id {switch_id}")
         return None
 
+    interfaces = [{'name': name, 'status': status, 'shutdown': shutdown, 'vlan': vlan[i], 'mac': mac[i]} for i, (name, status, shutdown) in enumerate(zip(int_names, int_status, int_shutdown))]
+
     return {
         'switch': switch_data,
-        'int_names': int_names,
-        'int_status': int_status,
-        'int_shutdown': int_shutdown
+        'interfaces': interfaces
     }

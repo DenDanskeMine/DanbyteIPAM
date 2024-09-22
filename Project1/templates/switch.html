@@ -1,6 +1,5 @@
 {% extends "base.html" %}
 {% block content %}
-
 <div class="grid grid-cols-3 gap-4 mb-4">
     <!-- Switch Information -->
     <div class="flex items-start justify-start h-auto rounded bg-gray-50 dark:bg-gray-800 p-4">
@@ -49,9 +48,9 @@
 </div>
 
 <!-- Display stack groups -->
-<div class="flex flex-col gap-y-4 mt-4"> <!-- Changed from flex-wrap to flex-col to stack vertically -->
+<div class="flex flex-col gap-y-4 mt-4">
     {% for stack, groups in stack_groups.items() %}
-        <div class="flex flex-col items-start mb-4"> <!-- Added margin to stack groups -->
+        <div class="flex flex-col items-start mb-4">
             <h4 class="text-lg font-semibold">{{ stack }}</h4>
             <div class="flex space-x-1 mb-1">
                 {% for interface in groups.odd %}
@@ -62,7 +61,7 @@
                         {% else %} bg-gray-500 {% endif %}
                         text-white font-bold rounded flex items-center justify-center w-8 h-8"
                         onclick="openModal('{{ interface.name }}', '{{ interface.vlan }}', '{{ interface.mac }}')">
-                        {{ interface.name.split('/')[-1] }} <!-- Only display the interface number -->
+                        {{ interface.name.split('/')[-1] }}
                     </div>
                 {% endfor %}
             </div>
@@ -75,7 +74,7 @@
                         {% else %} bg-gray-500 {% endif %}
                         text-white font-bold rounded flex items-center justify-center w-8 h-8"
                         onclick="openModal('{{ interface.name }}', '{{ interface.vlan }}', '{{ interface.mac }}')">
-                        {{ interface.name.split('/')[-1] }} <!-- Only display the interface number -->
+                        {{ interface.name.split('/')[-1] }}
                     </div>
                 {% endfor %}
             </div>
@@ -100,8 +99,12 @@
 </div>
 
 <script>
-    function openModal(interfaceName) {
-        document.getElementById('modalContent').innerText = interfaceName;
+    function openModal(interfaceName, vlan, mac) {
+        document.getElementById('modalContent').innerHTML = `
+            <p><strong>Interface Name:</strong> ${interfaceName}</p>
+            <p><strong>VLAN:</strong> ${vlan}</p>
+            <p><strong>MAC Address:</strong> ${mac}</p>
+        `;
         document.getElementById('interfaceModal').classList.remove('hidden');
     }
 
