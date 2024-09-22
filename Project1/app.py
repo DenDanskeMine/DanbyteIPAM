@@ -1,4 +1,4 @@
-from flask import Flask, render_template, redirect, url_for, flash, request
+from flask import Flask, render_template, redirect, url_for, flash, request, session
 from get_favorite_switch import get_favorite_switch
 from snmp_switch import snmp_switch, refresh_snmp_data_for_switch
 from switch_data import get_switch_data
@@ -10,6 +10,9 @@ from ips import get_ips_for_subnet, get_ip, add_ip_to_subnet, update_ip
 from ipaddress import ip_network
 from get_favorite_subnets import get_favorite_subnets
 from get_favorite_ips import get_favorite_ips
+from flask_bcrypt import Bcrypt
+from functools import wraps
+from werkzeug.security import generate_password_hash, check_password_hash
 
 
 
@@ -18,6 +21,7 @@ logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %
 
 app = Flask(__name__)
 app.secret_key = 'supersecretkey'
+
 
 @app.context_processor
 def inject_switches():
@@ -32,7 +36,107 @@ def inject_switches():
     num_switches = {'online': online_count, 'offline': offline_count}
     return dict(num_switches=num_switches)
 
+def hash_password(plain_password):
+    return bcrypt.generate_password_hash(plain_password).decode('utf-8')
+
+# Function to check the password
+def check_password(hashed_password, plain_password):
+    return bcrypt.check_password_hash(hashed_password, plain_password)
+
+def add_user(username, plain_password, name, lastname, is_admin=False, ro=False):
+    hashed_password = hash_password(plain_password)
+    
+    conn = db.get_db_connection()
+    cursor = conn.cursor()
+    
+    cursor.execute(
+        'INSERT INTO USERS (username, password, name, lastname, ro, is_admin) VALUES (%s, %s, %s, %s, %s, %s)',
+        (username, hashed_password, name, lastname, int(ro), int(is_admin))
+    )
+    conn.commit()
+    cursor.close()
+    conn.close()
+
+
+
+@app.route('/logout')
+def logout():
+    session.clear()
+    flash('You have been logged out.', 'success')
+    return redirect(url_for('login'))
+
+def login_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if 'user_id' not in session:
+            flash('You need to be logged in to access this page.', 'danger')
+            return redirect(url_for('login'))
+        return f(*args, **kwargs)
+    return decorated_function
+
+@app.route('/register', methods=['GET', 'POST'])
+@login_required
+def register():
+    # Check if the logged-in user is an admin
+    if not session.get('is_admin'):
+        flash('You must be an admin to register new users.', 'danger')
+        return redirect(url_for('index'))
+
+    if request.method == 'POST':
+        username = request.form['username']
+        password = request.form['password']
+        hashed_password = generate_password_hash(password, method='pbkdf2:sha256', salt_length=64)
+
+        conn = db.get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute('INSERT INTO USERS (username, password, name, lastname) VALUES (%s, %s, %s, %s)', 
+                       (username, hashed_password, request.form['name'], request.form['lastname']))
+        conn.commit()
+        cursor.close()
+        conn.close()
+
+        flash('Registration successful! User added.', 'success')
+        return redirect(url_for('index'))
+
+    return render_template('register.html')
+
+
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    if request.method == 'POST':
+        username = request.form['username']
+        password = request.form['password']
+
+        conn = db.get_db_connection()
+        cursor = conn.cursor(dictionary=True)
+        cursor.execute('SELECT * FROM USERS WHERE username = %s', (username,))
+        user = cursor.fetchone()
+        cursor.close()
+        conn.close()
+
+        if user:
+            print(user)  # Debug: check what is fetched from the database
+
+        if user and check_password_hash(user['password'], password):
+            session['user_id'] = user['id']
+            session['username'] = user['username']
+            session['is_admin'] = bool(user['is_admin'])  # Store admin status in session as boolean
+            flash('Login successful!', 'success')
+            return redirect(url_for('index'))
+        else:
+            flash('Invalid username or password.', 'danger')
+
+    return render_template('login.html')
+
+
+
+
+
+
+
+
 @app.route('/')
+@login_required
 def index():
     favorite_switches, count_favorite_switches = get_favorite_switch()
     favorite_subnets, count_favorite_subnets = get_favorite_subnets()
@@ -50,6 +154,7 @@ def index():
 
 
 @app.route('/collect_snmp_data', methods=['POST'])
+@login_required
 def collect_snmp_data():
     try:
         snmp_switch()
@@ -60,6 +165,7 @@ def collect_snmp_data():
     return redirect(url_for('index'))
 
 @app.route('/refresh_snmp_data_for_switch/<int:switch_id>')
+@login_required
 def refresh_snmp_data_for_switch_route(switch_id):
     try:
         refresh_snmp_data_for_switch(switch_id)
@@ -70,31 +176,55 @@ def refresh_snmp_data_for_switch_route(switch_id):
     return redirect(url_for('show_switch', switch_id=switch_id))
 
 @app.route('/switch/<int:switch_id>')
+@login_required
 def show_switch(switch_id):
     try:
+        # Fetch data for the selected switch using switch_id
         switch_data = get_switch_data(switch_id)
+        
         if switch_data:
-            logging.debug(f"Switch data for switch_id {switch_id}: {switch_data}")
+            # Process interface data as before
             int_names = switch_data['switch']['int_names'].split(',')
             int_status = switch_data['switch']['int_status'].split(',')
             int_shutdown = switch_data['switch']['interface_shutdown_status'].split(',')
-            interfaces = [{'name': name, 'status': status, 'shutdown': shutdown} for name, status, shutdown in zip(int_names, int_status, int_shutdown)]
-            logging.debug(f"Interfaces before grouping: {interfaces}")
+            interfaces = [{'name': name, 'status': status, 'shutdown': shutdown} 
+                          for name, status, shutdown in zip(int_names, int_status, int_shutdown)]
+
+            # Group interfaces by stack or other criteria if needed
             stack_groups, grouped_interfaces = group_interfaces_by_stack(interfaces)
-            logging.debug(f"Grouped interfaces by stack: {stack_groups}")
-            logging.debug(f"Grouped interfaces: {grouped_interfaces}")
-            return render_template('switch.html', title=f'Switch {switch_id}', stack_groups=stack_groups, grouped_interfaces=grouped_interfaces, switch_id=switch_id, switch=switch_data['switch'])
+
+            # Fetch the specific switch from the database using switch_id
+            conn = db.get_db_connection()
+            cursor = conn.cursor(dictionary=True)
+            cursor.execute('SELECT * FROM SWITCHES WHERE id = %s', (switch_id,))  # Fetch only the selected switch
+            switch = cursor.fetchone()  # Get the single switch
+            cursor.close()
+            conn.close()
+
+            # Render the template with the single switch data
+            return render_template(
+                'switch.html',
+                title=f'Switch {switch_data["switch"].get("hostname", "Unknown")}',
+                switch=switch,  # Pass only the current switch
+                stack_groups=stack_groups,
+                grouped_interfaces=grouped_interfaces
+            )
+        else:
+            flash(f"Switch with ID {switch_id} not found.", 'danger')
+            return redirect(url_for('index'))
+
     except Exception as e:
         logging.error(f"Error showing switch {switch_id}: {e}")
         flash('Error showing switch. Check logs for details.', 'danger')
         return redirect(url_for('index'))
-
 @app.route('/subnets')
+@login_required
 def show_subnets():
     subnets = get_all_subnets()
     return render_template('subnets.html', title='Subnets', subnets=subnets)
 
 @app.route('/subnet/<int:subnet_id>')
+@login_required
 def show_subnet_ips(subnet_id):
     subnet, ips = get_ips_for_subnet(subnet_id)
     
@@ -106,11 +236,13 @@ def show_subnet_ips(subnet_id):
     return render_template('ips.html', title=f'IPs in Subnet {subnet["name"]}', subnet=subnet, ips=ips, available_ips=available_ips)
 
 @app.route('/ip/<int:ip_id>')
+@login_required
 def show_ip(ip_id):
     ip = get_ip(ip_id)
     return render_template('ip.html', title=f'IP {ip["address"]}', ip=ip)
 
 @app.route('/edit-ip/<int:ip_id>', methods=['GET', 'POST'])
+@login_required
 def edit_ip(ip_id):
     if request.method == 'POST':
         data = request.form.to_dict()
@@ -145,6 +277,7 @@ def edit_ip(ip_id):
     )
 
 @app.route('/edit-subnet/<int:subnet_id>', methods=['GET', 'POST'])
+@login_required
 def edit_subnet(subnet_id):
     if request.method == 'POST':
         data = request.form.to_dict()
@@ -155,6 +288,7 @@ def edit_subnet(subnet_id):
     return render_template('edit-subnet.html', title=f'Edit Subnet {subnet["name"]}', subnet=subnet)
 
 @app.route('/add-ip/<int:subnet_id>', methods=['POST'])
+@login_required
 def add_ip(subnet_id):
     data = request.form.to_dict()
     add_ip_to_subnet(subnet_id, **data)
@@ -205,6 +339,18 @@ def get_switch_details(switch_id):
     conn.close()
     return switch
 
+@app.route('/switches')
+@login_required
+def show_switches():
+    # Fetch all switches from the database
+    conn = db.get_db_connection()
+    cursor = conn.cursor(dictionary=True)
+    cursor.execute('SELECT * FROM SWITCHES')  # Query to fetch all switches
+    switches = cursor.fetchall()
+    cursor.close()
+    conn.close()
+
+    return render_template('switches.html', switches=switches)
 
 
 if __name__ == '__main__':
