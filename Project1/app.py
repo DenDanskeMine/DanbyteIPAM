@@ -13,6 +13,7 @@ from get_favorite_ips import get_favorite_ips
 from flask_bcrypt import Bcrypt
 from functools import wraps
 from werkzeug.security import generate_password_hash, check_password_hash
+from collections import defaultdict
 
 
 
@@ -241,6 +242,31 @@ def show_subnet_ips(subnet_id):
     used_ips_count = len(used_ips)
     available_ips_count = len(available_ips)
     
+    # Count IPs by status
+    status_counts = {
+        'Active': 0,
+        'Down': 0,
+        'Warning': 0,
+        'Unknown': 0
+    }
+    for ip in ips:
+        status = ip['status']
+        if status == '1':
+            status_counts['Active'] += 1
+        elif status == '0':
+            status_counts['Down'] += 1
+        elif status == '3':
+            status_counts['Warning'] += 1
+        else:
+            status_counts['Unknown'] += 1
+    
+    # Add available IPs to the counts
+    status_counts['Available'] = available_ips_count
+    
+    chart_series = [status_counts['Active'], status_counts['Down'], status_counts['Warning'], status_counts['Available']]
+    chart_labels = ['Active', 'Down', 'Warning', 'Available']
+    chart_colors_list = ['#34d399', '#f87171', '#fbbf24', '#9ca3af']
+    
     # Render the template, passing the calculated values to the frontend
     return render_template(
         'ips.html', 
@@ -252,7 +278,11 @@ def show_subnet_ips(subnet_id):
         ip_data=ip_data,
         subnet_range=subnet_range,
         used_ips_count=used_ips_count, 
-        available_ips_count=available_ips_count
+        available_ips_count=available_ips_count,
+        status_counts=status_counts,
+        chart_series=chart_series,
+        chart_labels=chart_labels,
+        chart_colors_list=chart_colors_list
     )
 
 

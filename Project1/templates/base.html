@@ -7,9 +7,13 @@
     {% else %}
     <title>Danbyte</title>
     {% endif %}
-    <link rel="stylesheet" href="https://cdn.tailwindcss.com">
+    <link href="{{ url_for('static', filename='css/output.css') }}" rel="stylesheet">
+
     <link rel="stylesheet" href="{{ url_for('static', filename='css/all.min.css') }}">
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
+    <script src="https://cdn.jsdelivr.net/npm/simple-datatables@latest" defer></script>
+    <script src="https://cdn.jsdelivr.net/npm/flowbite@1.6.5/dist/flowbite.min.js"></script>
+
 
 </head>
 
