@@ -30,18 +30,11 @@
             <p>Debug: Owner value is {{ current_ip.owner }}</p>
         </div>
 
-        <!-- Boolean Fields Styled as Switches -->
-        <div class="checkbox-group col-span-2">
-            <label class="flex items-center">
-                <input type="checkbox" name="is_favorite" class="toggle-switch" {% if current_ip.is_favorite %}checked{% endif %}>
-                <span class="ml-2 text-sm">Is Favorite</span>
-            </label>
-            <p>Debug: Is Favorite value is {{ current_ip.is_favorite }}</p>
-            <label class="flex items-center">
-                <input type="checkbox" name="is_scannable" class="toggle-switch" {% if current_ip.is_scannable %}checked{% endif %}>
-                <span class="ml-2 text-sm">Is Scannable</span>
-            </label>
-            <p>Debug: Is Scannable value is {{ current_ip.is_scannable }}</p>
+        <div class="flex items-center">
+            <label for="is_gateway" class="block text-sm font-medium text-gray-700">Is Gateway:</label>
+            <input type="checkbox" id="is_gateway" name="is_gateway" class="sr-only peer" {% if ip['is_gateway'] %}checked{% endif %}>
+            <div class="relative w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600"></div>
+            <span class="ms-3 text-sm font-medium text-gray-900 dark:text-gray-300">Is Gateway</span>
         </div>
 
         <button type="submit" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-6 rounded">Save</button>
