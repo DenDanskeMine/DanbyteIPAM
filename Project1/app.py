@@ -6,7 +6,7 @@ from group_interfaces import group_interfaces_by_stack
 import db
 import logging
 from subnets import get_all_subnets, get_subnet, update_subnet
-from ips import get_ips_for_subnet, get_ip, add_ip_to_subnet, update_ip, get_ips_for_availability
+from ips import get_ips_for_subnet, get_ip, add_ip_to_subnet, update_ip, get_ips_for_availability, scan_and_insert_ip, detect_hosts, scan_ips
 from ipaddress import ip_network, IPv4Address  
 from get_favorite_subnets import get_favorite_subnets
 from get_favorite_ips import get_favorite_ips
@@ -14,7 +14,7 @@ from flask_bcrypt import Bcrypt
 from functools import wraps
 from werkzeug.security import generate_password_hash, check_password_hash
 from collections import defaultdict
-
+import asyncio
 
 
 # Configure logging
@@ -59,7 +59,6 @@ def add_user(username, plain_password, name, lastname, is_admin=False, ro=False)
     conn.close()
 
 
-
 @app.route('/logout')
 def logout():
     session.clear()
@@ -101,6 +100,23 @@ def register():
 
     return render_template('register.html')
 
+@app.route('/scan-ips', methods=['POST'])
+@login_required
+def scan_ips_route():
+    subnet_id = request.form.get('subnet_id')
+    logging.info(f"Received request to scan subnet ID: {subnet_id}")
+    scan_ips(subnet_id)
+    flash('IP scan completed!', 'success')
+    return redirect(url_for('show_subnet_ips', subnet_id=subnet_id) if subnet_id else url_for('index'))
+
+@app.route('/detect-hosts', methods=['POST'])
+@login_required
+def detect_hosts_route():
+    subnet_id = request.form.get('subnet_id')
+    logging.info(f"Received request to detect hosts in subnet ID: {subnet_id}")
+    asyncio.run(detect_hosts(subnet_id))
+    flash('Host detection completed!', 'success')
+    return redirect(url_for('show_subnet_ips', subnet_id=subnet_id) if subnet_id else url_for('index'))
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
