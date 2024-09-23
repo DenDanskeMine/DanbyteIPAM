@@ -114,7 +114,7 @@ def scan_ips_route():
 def detect_hosts_route():
     subnet_id = request.form.get('subnet_id')
     logging.info(f"Received request to detect hosts in subnet ID: {subnet_id}")
-    asyncio.run(detect_hosts(subnet_id))
+    detect_hosts(subnet_id)
     flash('Host detection completed!', 'success')
     return redirect(url_for('show_subnet_ips', subnet_id=subnet_id) if subnet_id else url_for('index'))
 
@@ -266,15 +266,17 @@ def show_subnet_ips(subnet_id):
         'Unknown': 0
     }
     for ip in ips:
-        status = ip['status']
-        if status == '1':
+        status = int(ip['status']) if ip['status'] is not None else -1
+        if status == 1:
             status_counts['Active'] += 1
-        elif status == '0':
+        elif status == 0:
             status_counts['Down'] += 1
-        elif status == '3':
+        elif status == 3:
             status_counts['Warning'] += 1
         else:
             status_counts['Unknown'] += 1
+
+
     
     # Add available IPs to the counts
     status_counts['Available'] = available_ips_count
@@ -303,12 +305,6 @@ def show_subnet_ips(subnet_id):
 
 
 
-@app.route('/ip/<int:ip_id>')
-@login_required
-def show_ip(ip_id):
-    ip = get_ip(ip_id)
-    return render_template('ip.html', title=f'IP {ip["address"]}', ip=ip)
-
 @app.route('/edit-ip/<int:ip_id>', methods=['GET', 'POST'])
 @login_required
 def edit_ip(ip_id):
@@ -322,10 +318,21 @@ def edit_ip(ip_id):
         data['is_gateway'] = 1 if 'is_gateway' in data else 0
         data['is_favorite'] = 1 if 'is_favorite' in data else 0
 
+        # Handle 'switch_id' separately
+        switch_id = data.get('switch_id', '').strip()
+        if switch_id == '':
+            data['switch_id'] = None
+        else:
+            try:
+                data['switch_id'] = int(switch_id)
+            except ValueError:
+                data['switch_id'] = None  # Or handle the error as needed
+                logging.warning(f"Invalid switch_id value received: {switch_id}")
+
         # Handle optional fields
         optional_fields = ['hostname', 'mac', 'description', 'note', 'location', 'port']
         for field in optional_fields:
-            if field not in data or data[field] == '':
+            if field not in data or data[field].strip() in ('', 'None'):
                 data[field] = None
 
         # Debugging output
@@ -352,6 +359,7 @@ def edit_ip(ip_id):
         switches=all_switches
     )
 
+
 @app.route('/edit-subnet/<int:subnet_id>', methods=['GET', 'POST'])
 @login_required
 def edit_subnet(subnet_id):
@@ -362,6 +370,13 @@ def edit_subnet(subnet_id):
         return redirect(url_for('show_subnet_ips', subnet_id=subnet_id))
     subnet = get_subnet(subnet_id)
     return render_template('edit-subnet.html', title=f'Edit Subnet {subnet["name"]}', subnet=subnet)
+
+@app.route('/ip/<int:ip_id>')
+@login_required
+def show_ip(ip_id):
+    ip = get_ip(ip_id)
+    return render_template('ip.html', title=f'IP {ip["address"]}', ip=ip)
+
 
 @app.route('/add-ip/<int:subnet_id>', methods=['POST'])
 @login_required

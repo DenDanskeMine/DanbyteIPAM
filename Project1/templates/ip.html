@@ -22,6 +22,7 @@
 
         <!-- Details about the IP address -->
         <p class="mb-2 text-white"><strong>Status:</strong> {{ 'Active' if ip.status == '1' else 'Inactive' }}</p>
+        <p class="mb-2 text-white"><strong>Hostname:</strong> {{ ip.hostname }}</p>
         <p class="mb-2 text-white"><strong>Owner:</strong> {{ ip.owner }}</p>
         <p class="mb-2 text-white"><strong>Last Seen:</strong> {{ ip.last_seen or 'Never' }}</p>
         <p class="mb-2 text-white"><strong>Description:</strong> {{ ip.description or 'None' }}</p>

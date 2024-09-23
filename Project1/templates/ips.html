@@ -53,13 +53,13 @@
                         {% set ip_id = used_ips[ip] %}
                         {% set ip_info = ip_data[ip] %}
                         {% set status = 'Unknown' %}
-                        {% if ip_info.status == '1' %}
+                        {% if ip_info.status|int == 1 %}
                             {% set status = 'Active' %}
                             {% set bg_color = 'bg-green-400 hover:bg-green-500' %}
-                        {% elif ip_info.status == '0' %}
+                        {% elif ip_info.status|int == 0 %}
                             {% set status = 'Down' %}
                             {% set bg_color = 'bg-red-400 hover:bg-red-500' %}
-                        {% elif ip_info.status == '3' %}
+                        {% elif ip_info.status|int == 3 %}
                             {% set status = 'Warning' %}
                             {% set bg_color = 'bg-yellow-400 hover:bg-yellow-500' %}
                         {% else %}
@@ -192,20 +192,20 @@
             <tbody>
                 {% for ip in ips %}
                 {% set status = 'Unknown' %}
-                {% if ip.status == '1' %}
+                {% if ip.status|int == 1 %}
                     {% set status = 'Active' %}
-                {% elif ip.status == '0' %}
+                {% elif ip.status|int == 0 %}
                     {% set status = 'Down' %}
-                {% elif ip.status == '3' %}
+                {% elif ip.status|int == 3 %}
                     {% set status = 'Warning' %}
                 {% endif %}
                 <tr data-status="{{ status }}" data-sort-status="{{ status }}">
                     <td class="px-6 py-4 whitespace-nowrap">
-                        {% if ip.status == '1' %}
+                        {% if ip.status|int == 1 %}
                             <i class="fa-solid fa-network-wired text-green-400 text-xl"></i>
-                        {% elif ip.status == '0' %}
+                        {% elif ip.status|int == 0 %}
                             <i class="fa-solid fa-network-wired text-red-400 text-xl"></i>
-                        {% elif ip.status == '3' %}
+                        {% elif ip.status|int == 3 %}
                             <i class="fa-solid fa-network-wired text-yellow-400 text-xl"></i>
                         {% else %}
                             <i class="fa-solid fa-network-wired text-gray-400 text-xl"></i>

@@ -5,13 +5,12 @@ import subprocess
 import socket
 import datetime
 import ipaddress
-import asyncio
 
-
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
 
 def scan_ips(subnet_id=None):
     logging.info("Starting IP scan")
+
     conn = db.get_db_connection()
     cursor = conn.cursor(dictionary=True)
 
@@ -23,32 +22,98 @@ def scan_ips(subnet_id=None):
         cursor.execute('SELECT * FROM IPs WHERE is_scannable = TRUE')
 
     ips = cursor.fetchall()
+    cursor.close()
+    conn.close()
+
     logging.info(f"Found {len(ips)} IPs to scan")
 
-async def ping_ip(ip):
+    for ip_record in ips:
+        ip = ip_record['address']
+        subnet_id = ip_record['subnet_id']
+        scan_and_resolve(ip, subnet_id)
+
+    logging.info("IP scan completed")
+
+def scan_and_resolve(ip, subnet_id):
+    is_online = ping_ip(ip)
+    hostname = resolve_hostname(ip) if is_online else None
+
+    conn = db.get_db_connection()
+    cursor = conn.cursor()
+
+    # Check if the IP exists in the database
+    cursor.execute(
+        'SELECT * FROM IPs WHERE address = %s AND subnet_id = %s',
+        (ip, subnet_id)
+    )
+    result = cursor.fetchone()
+
+    if is_online:
+        logging.info(f"Detected active host: {ip} with hostname: {hostname}")
+        if result is None:
+            # Insert new IP entry
+            cursor.execute(
+                '''
+                INSERT INTO IPs (address, hostname, subnet_id, status, is_scannable, is_resolvable, last_seen)
+                VALUES (%s, %s, %s, %s, %s, %s, %s)
+                ''',
+                (ip, hostname if hostname else None, subnet_id, 1, True, bool(hostname), datetime.datetime.now())
+            )
+            conn.commit()
+            logging.info(f"Inserted IP {ip} with hostname {hostname} into subnet {subnet_id}")
+        else:
+            # Update existing IP entry
+            cursor.execute(
+                '''
+                UPDATE IPs
+                SET hostname = %s, last_seen = %s, status = %s, is_resolvable = %s
+                WHERE address = %s AND subnet_id = %s
+                ''',
+                (hostname if hostname else None, datetime.datetime.now(), 1, bool(hostname), ip, subnet_id)
+            )
+            conn.commit()
+            logging.info(f"Updated IP {ip} with hostname {hostname} in subnet {subnet_id}")
+    else:
+        logging.info(f"IP {ip} is not online")
+        if result is not None:
+            # Update the IP status to offline
+            cursor.execute(
+                '''
+                UPDATE IPs
+                SET status = %s
+                WHERE address = %s AND subnet_id = %s
+                ''',
+                (0, ip, subnet_id)
+            )
+            conn.commit()
+            logging.info(f"Updated IP {ip} status to offline in subnet {subnet_id}")
+        else:
+            logging.info(f"IP {ip} does not exist in database and is offline")
+
+    cursor.close()
+    conn.close()
+
+
+def ping_ip(ip):
     try:
-        # Ping the IP address asynchronously
-        process = await asyncio.create_subprocess_exec(
-            'ping', '-c', '1', ip,
-            stdout=asyncio.subprocess.PIPE,
-            stderr=asyncio.subprocess.PIPE
-        )
-        stdout, stderr = await process.communicate()
-        return process.returncode == 0
+        result = subprocess.run(['ping', '-c', '1', ip], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        return result.returncode == 0
     except Exception as e:
         logging.error(f"Error pinging IP {ip}: {e}")
         return False
 
-async def resolve_hostname(ip):
-    loop = asyncio.get_event_loop()
+def resolve_hostname(ip):
     try:
-        result = await loop.run_in_executor(None, socket.gethostbyaddr, ip)
-        return result[0]  # Extract the hostname from the tuple
-    except socket.herror:
+        hostname, _, _ = socket.gethostbyaddr(ip)
+        logging.info(f"Resolved hostname for IP {ip}: {hostname}")
+        return hostname
+    except socket.herror as e:
+        logging.warning(f"Failed to resolve hostname for IP {ip}: {e}")
         return None
-    
-async def detect_hosts(subnet_id=None):
+
+def detect_hosts(subnet_id=None):
     logging.info("Starting host detection")
+
     conn = db.get_db_connection()
     cursor = conn.cursor(dictionary=True)
 
@@ -60,50 +125,81 @@ async def detect_hosts(subnet_id=None):
         cursor.execute('SELECT * FROM SUBNETS')
 
     subnets = cursor.fetchall()
+    cursor.close()
+    conn.close()
+
     logging.info(f"Found {len(subnets)} subnets to scan")
 
-    tasks = []
     for subnet in subnets:
         # Use the 'range' field to generate the IP range
         ip_range = generate_ip_range(subnet['range'])
+        subnet_id = subnet['id']
 
         for ip in ip_range:
-            tasks.append(scan_and_insert_ip(ip, subnet['id'], cursor, conn))  # Pass conn here
+            scan_and_insert_ip(ip, subnet_id)
 
-    await asyncio.gather(*tasks)
-
-    cursor.close()
-    conn.close()
     logging.info("Host detection completed")
 
-async def scan_and_insert_ip(ip, subnet_id, cursor, conn):
-    is_online = await ping_ip(ip)
-    hostname = await resolve_hostname(ip) if is_online else None
+def scan_and_insert_ip(ip, subnet_id):
+    is_online = ping_ip(ip)
+    hostname = resolve_hostname(ip) if is_online else None
+
+    conn = db.get_db_connection()
+    cursor = conn.cursor()
 
     if is_online:
         logging.info(f"Detected active host: {ip} with hostname: {hostname}")
 
         # Check if the IP already exists in the database
         cursor.execute(
-            'SELECT COUNT(*) FROM IPs WHERE address = %s AND subnet_id = %s',
+            'SELECT * FROM IPs WHERE address = %s AND subnet_id = %s',
             (ip, subnet_id)
         )
         result = cursor.fetchone()
-        if result['COUNT(*)'] == 0:
+        if result is None:
             # Insert the active IP into the IPs table
             cursor.execute(
-                'INSERT INTO IPs (address, hostname, subnet_id, status, is_scannable, is_resolvable, last_seen) VALUES (%s, %s, %s, %s, %s, %s, %s)',
-                (ip, hostname, subnet_id, 1, True, hostname is not None, datetime.datetime.now())
+                '''
+                INSERT INTO IPs (address, hostname, subnet_id, status, is_scannable, is_resolvable, last_seen)
+                VALUES (%s, %s, %s, %s, %s, %s, %s)
+                ''',
+                (ip, hostname if hostname else None, subnet_id, 1, True, bool(hostname), datetime.datetime.now())
             )
             conn.commit()
+            logging.info(f"Inserted IP {ip} with hostname {hostname} into subnet {subnet_id}")
         else:
-            logging.info(f"IP {ip} already exists in subnet {subnet_id}")
+            # Update the existing IP entry with the new hostname
+            cursor.execute(
+                '''
+                UPDATE IPs
+                SET hostname = %s, last_seen = %s, status = %s, is_resolvable = %s
+                WHERE address = %s AND subnet_id = %s
+                ''',
+                (hostname if hostname else None, datetime.datetime.now(), 1, bool(hostname), ip, subnet_id)
+            )
+            conn.commit()
+            logging.info(f"Updated IP {ip} with hostname {hostname} in subnet {subnet_id}")
+    else:
+        logging.info(f"IP {ip} is not online")
+        # Optionally, you can insert/update offline IPs here if needed
+        cursor.execute(
+            '''
+            UPDATE IPs
+            SET status = %s
+            WHERE address = %s AND subnet_id = %s
+            ''',
+            (0, ip, subnet_id)
+        )
+        conn.commit()
+        logging.info(f"Updated IP {ip} status to offline in subnet {subnet_id}")
+
+    cursor.close()
+    conn.close()
 
 def generate_ip_range(cidr):
     # Generate IP range from CIDR notation
     net = ip_network(cidr, strict=False)
     return [str(ip) for ip in net.hosts()]
-
 
 def get_ips_for_subnet(subnet_id):
     conn = db.get_db_connection()
@@ -121,12 +217,16 @@ def get_ips_for_subnet(subnet_id):
         WHERE IPs.subnet_id = %s
     """, (subnet_id,))
     
-    # Fetch the IP data including the switch information
     ips = cursor.fetchall()
+    
+    # Cast 'status' to integer for each IP
+    for ip in ips:
+        ip['status'] = int(ip['status']) if ip['status'] is not None else -1
+    
     conn.close()
     
-    # Return both subnet details and IPs with switch information
     return subnet, ips
+
 
 def get_ips_for_availability(subnet_id):
     conn = db.get_db_connection()
@@ -151,7 +251,6 @@ def get_ips_for_availability(subnet_id):
 
     return used_ips, all_ips
 
-
 def get_ip(ip_id):
     conn = db.get_db_connection()
     cursor = conn.cursor(dictionary=True)
@@ -167,8 +266,13 @@ def get_ip(ip_id):
     ip = cursor.fetchone()
     conn.close()
 
+    # Convert 'None' strings to None
+    for key in ['hostname', 'mac', 'description', 'note', 'location', 'port']:
+        if ip[key] == 'None':
+            ip[key] = None
+
     # Debugging output to check what is returned
-    print(ip)  # Add this to verify what is being returned
+    logging.debug(f"Fetched IP data: {ip}")
     
     return ip
 
@@ -189,7 +293,6 @@ def add_ip_to_subnet(subnet_id, **kwargs):
     finally:
         cursor.close()
         conn.close()
-
 
 def update_ip(ip_id, **kwargs):
     conn = db.get_db_connection()
