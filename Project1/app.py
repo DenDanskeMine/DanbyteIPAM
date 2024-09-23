@@ -314,11 +314,23 @@ def show_ip(ip_id):
 def edit_ip(ip_id):
     if request.method == 'POST':
         data = request.form.to_dict()
-        
-        # Handle case where switch_id is not selected (set it to None)
-        if not data.get('switch_id'):
-            data['switch_id'] = None
-        
+
+        # Convert checkbox values to integers (0 or 1)
+        data['is_resolvable'] = 1 if 'is_resolvable' in data else 0
+        data['is_scannable'] = 1 if 'is_scannable' in data else 0
+        data['show_status'] = 1 if 'show_status' in data else 0
+        data['is_gateway'] = 1 if 'is_gateway' in data else 0
+        data['is_favorite'] = 1 if 'is_favorite' in data else 0
+
+        # Handle optional fields
+        optional_fields = ['hostname', 'mac', 'description', 'note', 'location', 'port']
+        for field in optional_fields:
+            if field not in data or data[field] == '':
+                data[field] = None
+
+        # Debugging output
+        logging.info(f"Updating IP with data: {data}")
+
         # Update IP and redirect
         update_ip(ip_id, **data)
         flash('IP updated successfully!', 'success')
@@ -326,19 +338,15 @@ def edit_ip(ip_id):
 
     # Fetch the current IP and available switches
     current_ip = get_ip(ip_id)
+    available_ips = get_available_ips(current_ip['subnet_id'])
+
+    # Ensure the current IP address is included in the available IPs
+    if current_ip['address'] not in available_ips:
+        available_ips.append(current_ip['address'])
+
     all_switches = get_all_switches()
-
     return render_template(
         'edit-ip.html',
-        ip=current_ip,
-        available_ips=get_available_ips(current_ip['subnet_id']),
-        switches=all_switches
-    )
-
-
-    return render_template(
-        'edit-ip.html',
-        title=f'Edit IP {current_ip["address"]}',
         ip=current_ip,
         available_ips=available_ips,
         switches=all_switches
