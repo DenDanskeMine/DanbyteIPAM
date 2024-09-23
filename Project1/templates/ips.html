@@ -91,6 +91,10 @@
         <!-- Pie Chart Section taking 1/4 space -->
         <div class="bg-gray-900 dark:bg-gray-800 p-4 rounded-lg shadow">
             <h3 class="text-xl text-gray-300 dark:text-gray-400 mb-4">IP Status Distribution</h3>
+            <!-- Add Reset Button -->
+            <button onclick="resetFilters()" class="mb-4 bg-blue-500 hover:bg-blue-700 text-white font-bold py-1 px-3 rounded">
+                Reset Filters
+            </button>
             <div id="ipChart" class="w-full h-64"></div>
         </div>
     </div>
@@ -247,6 +251,14 @@ function openAddIpModal(ipAddress) {
 </script>
 
 <script>
+    function resetFilters() {
+        // Reset the chart's selection
+        chart.resetSeries();
+
+        // Reset filters
+        filterByStatus('All');
+    }
+
     document.addEventListener('DOMContentLoaded', () => {
         // Initialize the chart with all statuses
         const options = {
@@ -276,22 +288,23 @@ function openAddIpModal(ipAddress) {
                 }
             }
         };
-    
-        const chart = new ApexCharts(document.querySelector("#ipChart"), options);
+
+        // Make 'chart' accessible globally
+        window.chart = new ApexCharts(document.querySelector("#ipChart"), options);
         chart.render();
-    
+
         // Initialize DataTable
         if (document.getElementById("selection-table") && typeof simpleDatatables.DataTable !== 'undefined') {
-    
+
             let multiSelect = true;
             let rowNavigation = false;
             let table = null;
-    
+
             const resetTable = function() {
                 if (table) {
                     table.destroy();
                 }
-    
+
                 const options = {
                     perPage: 25, // Set default entries per page
                     perPageSelect: [25, 50, 300, 0], // Options for entries per page (0 represents 'All')
@@ -313,19 +326,19 @@ function openAddIpModal(ipAddress) {
                         return tr;
                     }
                 };
-    
+
                 if (rowNavigation) {
                     options.rowNavigation = true;
                     options.tabIndex = 1;
                 }
-    
+
                 table = new simpleDatatables.DataTable("#selection-table", options);
-    
+
                 // Mark all rows as unselected
                 table.data.data.forEach(data => {
                     data.selected = false;
                 });
-    
+
                 table.on("datatable.selectrow", (rowIndex, event) => {
                     event.preventDefault();
                     const row = table.data.data[rowIndex];
@@ -341,20 +354,20 @@ function openAddIpModal(ipAddress) {
                     }
                     table.update();
                 });
+
+                // Make 'table' variable accessible globally for filtering
+                window.dataTable = table;
             };
-    
+
             // Disable row navigation on mobile devices
             const isMobile = window.matchMedia("(any-pointer:coarse)").matches;
             if (isMobile) {
                 rowNavigation = false;
             }
-    
+
             resetTable();
-    
-            // Make 'table' variable accessible globally for filtering
-            window.dataTable = table;
         }
-    
+
         function filterByStatus(status) {
             // Filter IP grid
             const gridItems = document.querySelectorAll('.ip-grid-item');
@@ -365,7 +378,7 @@ function openAddIpModal(ipAddress) {
                     item.classList.add('hidden');
                 }
             });
-    
+
             // Filter DataTable
             if (status === 'All') {
                 dataTable.columns().search('');
@@ -374,8 +387,14 @@ function openAddIpModal(ipAddress) {
             }
             dataTable.update();
         }
+
+        // Make filterByStatus accessible globally
+        window.filterByStatus = filterByStatus;
+
     });
-    </script>
+</script>
+
+    
     
     
 
