@@ -16,7 +16,7 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from collections import defaultdict
 import asyncio
 from asgiref.wsgi import WsgiToAsgi
-
+from subnets import add_new_subnet
 
 
 # Configure logging
@@ -101,6 +101,17 @@ def register():
         return redirect(url_for('index'))
 
     return render_template('register.html')
+
+@app.route('/add-subnet', methods=['GET', 'POST'])
+@login_required
+def add_subnet():
+    if request.method == 'POST':
+        data = request.form.to_dict()
+        # Add the new subnet to the database
+        add_new_subnet(**data)
+        flash('Subnet added successfully!', 'success')
+        return redirect(url_for('show_subnets'))
+    return render_template('add-subnet.html', title='Add Subnet')
 
 @app.route('/scan-ips', methods=['POST'])
 @login_required
