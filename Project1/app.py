@@ -371,7 +371,6 @@ def edit_ip(ip_id):
         switches=all_switches
     )
 
-
 @app.route('/edit-subnet/<int:subnet_id>', methods=['GET', 'POST'])
 @login_required
 def edit_subnet(subnet_id):
