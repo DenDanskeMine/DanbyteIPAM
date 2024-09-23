@@ -1,5 +1,7 @@
 import db
 import logging
+from ipaddress import ip_network
+
 
 def get_ips_for_subnet(subnet_id):
     conn = db.get_db_connection()
@@ -19,11 +21,34 @@ def get_ips_for_subnet(subnet_id):
     
     # Fetch the IP data including the switch information
     ips = cursor.fetchall()
+    conn.close()
+    
+    # Return both subnet details and IPs with switch information
+    return subnet, ips
+
+def get_ips_for_availability(subnet_id):
+    conn = db.get_db_connection()
+    cursor = conn.cursor(dictionary=True)
+
+    # Fetch the subnet details to get the range
+    cursor.execute('SELECT `range` FROM SUBNETS WHERE id = %s', (subnet_id,))
+    subnet = cursor.fetchone()
+
+    if not subnet:
+        return None, []
+
+    # Get all the IPs already in use from the IPs table
+    cursor.execute('SELECT address FROM IPs WHERE subnet_id = %s', (subnet_id,))
+    used_ips = {row['address'] for row in cursor.fetchall()}
+
+    # Generate the full range of IPs from the subnet
+    subnet_range = ip_network(subnet['range'])
+    all_ips = [str(ip) for ip in subnet_range.hosts()]  # List of all IPs in the range
 
     conn.close()
 
-    # Return both subnet details and IPs with switch information
-    return subnet, ips
+    return used_ips, all_ips
+
 
 def get_ip(ip_id):
     conn = db.get_db_connection()

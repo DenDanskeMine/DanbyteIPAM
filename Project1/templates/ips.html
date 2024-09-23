@@ -1,6 +1,7 @@
 {% extends "base.html" %}
 {% block content %}
 <div class="p-4 border-2 border-gray-200 border-dashed rounded-lg dark:border-gray-700">
+    <!-- Header with the name of the Subnet -->
     <div class="flex justify-between items-center mb-4">
         <div class="text-3xl text-gray-400 dark:text-gray-500">
             IPs in Subnet: {{ subnet.name }}
@@ -9,6 +10,61 @@
             Add IP
         </button>
     </div>
+
+    <!-- Grid with IP availability and Pie Chart -->
+    <div class="grid grid-cols-4 gap-6 mb-6">
+        <!-- IP Availability Grid taking 3/4 space -->
+        <div class="col-span-3 bg-gray-900 dark:bg-gray-800 p-4 rounded-lg shadow">
+            <h3 class="text-xl text-gray-300 dark:text-gray-400 mb-4">IP Availability</h3>
+            <div class="grid grid-cols-12 gap-1">
+                {% for ip in subnet_range.hosts() %}
+                    {% if ip in used_ips %}
+                        {% set ip_id = used_ips[ip] %}
+                        {% set ip_info = ip_data[ip] %}
+                        {% if ip_info.status == '1' %}
+                            <a href="{{ url_for('show_ip', ip_id=ip_id) }}" 
+                               class="bg-green-400 hover:bg-green-500 text-white font-bold p-1 rounded transition duration-200 ease-in-out text-center"
+                               style="font-size: 0.75rem;">
+                                {{ ip.compressed.split('.')[-1] }}
+                            </a>
+                        {% elif ip_info.status == '0' %}
+                            <a href="{{ url_for('show_ip', ip_id=ip_id) }}" 
+                               class="bg-red-400 hover:bg-red-500 text-white font-bold p-1 rounded transition duration-200 ease-in-out text-center"
+                               style="font-size: 0.75rem;">
+                                {{ ip.compressed.split('.')[-1] }}
+                            </a>
+                        {% elif ip_info.status == '3' %}
+                            <a href="{{ url_for('show_ip', ip_id=ip_id) }}" 
+                               class="bg-yellow-400 hover:bg-yellow-500 text-white font-bold p-1 rounded transition duration-200 ease-in-out text-center"
+                               style="font-size: 0.75rem;">
+                                {{ ip.compressed.split('.')[-1] }}
+                            </a>
+                        {% else %}
+                            <a href="{{ url_for('show_ip', ip_id=ip_id) }}" 
+                               class="bg-blue-400 hover:bg-blue-500 text-white font-bold p-1 rounded transition duration-200 ease-in-out text-center"
+                               style="font-size: 0.75rem;">
+                                {{ ip.compressed.split('.')[-1] }}
+                            </a>
+                        {% endif %}
+                    {% else %}
+                        <!-- Available IPs - Grey -->
+                        <a href="#" onclick="openAddIpModal('{{ ip.compressed }}')" 
+                           class="bg-gray-500 hover:bg-gray-600 text-white font-bold p-1 rounded transition duration-200 ease-in-out text-center"
+                           style="font-size: 0.75rem;">
+                            {{ ip.compressed.split('.')[-1] }}
+                        </a>
+                    {% endif %}
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Pie Chart Section taking 1/4 space -->
+        <div class="bg-gray-900 dark:bg-gray-800 p-4 rounded-lg shadow">
+            <h3 class="text-xl text-gray-300 dark:text-gray-400 mb-4">Available vs. Used IPs</h3>
+            <canvas id="ipChart" class="h-48"></canvas>
+        </div>
+    </div>
+    <!-- IP Table with Status and Details -->
     <div class="bg-gray-900 dark:bg-gray-800 p-6 rounded-lg shadow">
         <table class="table-fixed divide-y divide-gray-200 dark:divide-gray-700 w-full">
             <thead>
@@ -42,10 +98,10 @@
                     <td class="w-32 px-4 py-2 border-b border-gray-200 dark:border-gray-700 text-sm font-medium text-gray-900 dark:text-gray-100 whitespace-nowrap">{{ ip.hostname }}</td>
                     <td class="w-12 px-4 py-2 border-b border-gray-200 dark:border-gray-700 text-sm font-medium text-gray-900 dark:text-gray-100 whitespace-nowrap">{{ ip.description }}</td>
                     <td class="w-12 px-4 py-2 border-b border-gray-200 dark:border-gray-700 text-sm font-medium text-gray-900 dark:text-gray-100 whitespace-nowrap">{{ ip.mac }}</td>
-                    <td class="w-24 px-4 py-2 border-b border-gray-200 dark:border-gray-700 text-sm font-medium text-gray-900 dark:text-gray-100 whitespace-nowrap">    {{ ip.switch_hostname or 'No Switch' }}                  </td>
-                    <td class="w-16 px-4 py-2 border-b border-gray-200 dark:border-gray-700 text-sm font-medium text-gray-900 dark:text-gray-100 whitespace-nowrap">{{ ip.port }}</td>
+                    <td class="w-24 px-4 py-2 border-b border-gray-200 dark:border-gray-700 text-sm font-medium text-gray-900 dark:text-gray-100 whitespace-nowrap">{{ ip.switch_hostname or 'No Switch' }}</td>
+                    <td class="w-16 px-4 py-2 border-b border-gray-200 dark:border-gray-700 text-sm font-medium text-right text-gray-900 dark:text-gray-100 whitespace-nowrap">{{ ip.port }}</td>
                     <td class="w-32 px-4 py-2 border-b border-gray-200 dark:border-gray-700 text-sm font-medium text-gray-900 dark:text-gray-100 whitespace-nowrap">{{ ip.location }}</td>
-                    <td class="w-5 px-4 py-2 border-b border-gray-200 dark:border-gray-700 text-sm font-medium  whitespace-nowrap">
+                    <td class="w-5 px-4 py-2 border-b border-gray-200 dark:border-gray-700 text-sm font-medium text-right whitespace-nowrap">
                         <div class="flex justify-end space-x-4">
                             <a href="{{ url_for('show_ip', ip_id=ip.id) }}" class="text-indigo-600 hover:text-indigo-900">
                                 <i class="fa-solid fa-eye"></i>
@@ -62,9 +118,7 @@
     </div>
 </div>
 
-
-
-<!-- Modal -->
+<!-- Modal for adding IP -->
 <div id="addIpModal" class="fixed z-10 inset-0 overflow-y-auto hidden">
     <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
         <div class="fixed inset-0 transition-opacity" aria-hidden="true">
@@ -118,5 +172,29 @@ function toggleModal() {
     const modal = document.getElementById('addIpModal');
     modal.classList.toggle('hidden');
 }
+
+function openAddIpModal(ipAddress) {
+    document.getElementById('address').value = ipAddress;
+    toggleModal();
+}
+
+    // Chart.js initialization
+    const ctx = document.getElementById('ipChart').getContext('2d');
+    const ipChart = new Chart(ctx, {
+        type: 'pie',
+        data: {
+            labels: ['Used IPs', 'Available IPs'],
+            datasets: [{
+                label: 'IP Availability',
+                data: [{{ used_ips_count }}, {{ available_ips_count }}],
+                backgroundColor: ['#f87171', '#34d399'],
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false
+        }
+    });
+
 </script>
 {% endblock %}

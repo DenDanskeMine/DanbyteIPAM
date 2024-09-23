@@ -6,8 +6,8 @@ from group_interfaces import group_interfaces_by_stack
 import db
 import logging
 from subnets import get_all_subnets, get_subnet, update_subnet
-from ips import get_ips_for_subnet, get_ip, add_ip_to_subnet, update_ip
-from ipaddress import ip_network
+from ips import get_ips_for_subnet, get_ip, add_ip_to_subnet, update_ip, get_ips_for_availability
+from ipaddress import ip_network, IPv4Address  
 from get_favorite_subnets import get_favorite_subnets
 from get_favorite_ips import get_favorite_ips
 from flask_bcrypt import Bcrypt
@@ -226,14 +226,36 @@ def show_subnets():
 @app.route('/subnet/<int:subnet_id>')
 @login_required
 def show_subnet_ips(subnet_id):
+    # Fetch the subnet and IPs information
     subnet, ips = get_ips_for_subnet(subnet_id)
+    
+    # Create dictionaries for used IPs and their data
+    used_ips = {IPv4Address(ip['address']): ip['id'] for ip in ips}
+    ip_data = {IPv4Address(ip['address']): ip for ip in ips}
     
     # Calculate available IPs within the subnet range
     subnet_range = ip_network(subnet['range'])
-    used_ips = {ip['address'] for ip in ips}
-    available_ips = [str(ip) for ip in subnet_range.hosts() if str(ip) not in used_ips]
+    available_ips = [ip for ip in subnet_range.hosts() if ip not in used_ips]
     
-    return render_template('ips.html', title=f'IPs in Subnet {subnet["name"]}', subnet=subnet, ips=ips, available_ips=available_ips)
+    # Count used and available IPs for the chart
+    used_ips_count = len(used_ips)
+    available_ips_count = len(available_ips)
+    
+    # Render the template, passing the calculated values to the frontend
+    return render_template(
+        'ips.html', 
+        title=f'IPs in Subnet {subnet["name"]}', 
+        subnet=subnet, 
+        ips=ips, 
+        available_ips=available_ips, 
+        used_ips=used_ips,
+        ip_data=ip_data,
+        subnet_range=subnet_range,
+        used_ips_count=used_ips_count, 
+        available_ips_count=available_ips_count
+    )
+
+
 
 @app.route('/ip/<int:ip_id>')
 @login_required

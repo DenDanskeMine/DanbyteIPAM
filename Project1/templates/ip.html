@@ -4,15 +4,72 @@
     <div class="text-3xl text-gray-400 dark:text-gray-500 mb-4">
         IP Details: {{ ip.address }}
     </div>
+
     <div class="bg-gray-900 dark:bg-gray-800 p-6 rounded-lg shadow">
-        <p>Status: {{ ip.status }}</p>
-        <p>Owner: {{ ip.owner }}</p>
-        <p>Last Seen: {{ ip.last_seen }}</p>
-        <p>Description: {{ ip.description }}</p>
-        <p>Note: {{ ip.note }}</p>
-        <p>Switch: {{ ip.switch }}</p>
-        <p>Device: {{ ip.device }}</p>
-        <p>Location: {{ ip.location }}</p>
+        <!-- Status icon with color logic based on the IP status -->
+        <div class="flex items-center space-x-2 mb-4">
+            {% if ip.status == '1' %}
+                <i class="fa-solid fa-network-wired text-green-400 text-xl"></i>
+            {% elif ip.status == '0' %}
+                <i class="fa-solid fa-network-wired text-red-400 text-xl"></i>
+            {% elif ip.status == '3' %}
+                <i class="fa-solid fa-network-wired text-yellow-400 text-xl"></i>
+            {% else %}
+                <i class="fa-solid fa-network-wired text-gray-400 text-xl"></i>
+            {% endif %}
+            <span class="text-xl text-gray-400 dark:text-gray-300">{{ 'Active' if ip.status == '1' else 'Inactive' }}</span>
+        </div>
+
+        <!-- Details about the IP address -->
+        <p class="mb-2 text-white"><strong>Status:</strong> {{ 'Active' if ip.status == '1' else 'Inactive' }}</p>
+        <p class="mb-2 text-white"><strong>Owner:</strong> {{ ip.owner }}</p>
+        <p class="mb-2 text-white"><strong>Last Seen:</strong> {{ ip.last_seen or 'Never' }}</p>
+        <p class="mb-2 text-white"><strong>Description:</strong> {{ ip.description or 'None' }}</p>
+        <p class="mb-2 text-white"><strong>Note:</strong> {{ ip.note or 'None' }}</p>
+        <p class="mb-2 text-white"><strong>Switch:</strong> {{ ip.switch or 'N/A' }}</p>
+        <p class="mb-2 text-white"><strong>Device:</strong> {{ ip.device or 'N/A' }}</p>
+        <p class="mb-2 text-white"><strong>Location:</strong> {{ ip.location or 'N/A' }}</p>
+
+        <!-- Toggle switch example for boolean fields -->
+        <div class="flex items-center mb-4">
+            <span class="text-gray-400 dark:text-gray-300 mr-2">Favorite</span>
+            <label class="inline-flex relative items-center cursor-pointer">
+                <input type="checkbox" class="sr-only peer" {% if ip.is_favorite %}checked{% endif %}>
+                <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+            </label>
+        </div>
+
+        <div class="flex items-center mb-4">
+            <span class="text-gray-400 dark:text-gray-300 mr-2">Nested</span>
+            <label class="inline-flex relative items-center cursor-pointer">
+                <input type="checkbox" class="sr-only peer" {% if ip.is_nested %}checked{% endif %}>
+                <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+            </label>
+        </div>
+
+        <div class="flex items-center mb-4">
+            <span class="text-gray-400 dark:text-gray-300 mr-2">Scannable</span>
+            <label class="inline-flex relative items-center cursor-pointer">
+                <input type="checkbox" class="sr-only peer" {% if ip.is_scannable %}checked{% endif %}>
+                <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+            </label>
+        </div>
+
+        <div class="flex items-center mb-4">
+            <span class="text-gray-400 dark:text-gray-300 mr-2">Resolvable</span>
+            <label class="inline-flex relative items-center cursor-pointer">
+                <input type="checkbox" class="sr-only peer" {% if ip.is_resolvable %}checked{% endif %}>
+                <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+            </label>
+        </div>
+
+        <div class="flex items-center mb-4">
+            <span class="text-gray-400 dark:text-gray-300 mr-2">Show Status</span>
+            <label class="inline-flex relative items-center cursor-pointer">
+                <input type="checkbox" class="sr-only peer" {% if ip.show_status %}checked{% endif %}>
+                <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+            </label>
+        </div>
     </div>
 </div>
 {% endblock %}
