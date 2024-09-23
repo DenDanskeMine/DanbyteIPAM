@@ -306,12 +306,18 @@ def add_ip_to_subnet(subnet_id, **kwargs):
 def update_ip(ip_id, **kwargs):
     conn = db.get_db_connection()
     cursor = conn.cursor()
-
-    columns = ', '.join(f"{k} = %s" for k in kwargs.keys())
-    values = tuple(kwargs.values()) + (ip_id,)
-
-    query = f"UPDATE IPs SET {columns} WHERE id = %s"
-    cursor.execute(query, values)
-    conn.commit()
-    cursor.close()
-    conn.close()
+    try:
+        # Dynamically build the SET part of the SQL statement
+        set_clause = ', '.join(f"{key} = %s" for key in kwargs.keys())
+        values = tuple(kwargs.values()) + (ip_id,)
+        query = f"UPDATE IPs SET {set_clause} WHERE id = %s"
+        cursor.execute(query, values)
+        conn.commit()
+        logging.debug(f"Updated IP ID {ip_id} with data: {kwargs}")
+    except Exception as e:
+        logging.error(f"Error updating IP ID {ip_id}: {e}")
+        conn.rollback()
+        raise
+    finally:
+        cursor.close()
+        conn.close()

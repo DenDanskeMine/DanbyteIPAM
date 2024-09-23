@@ -4,6 +4,7 @@ from snmp_switch import snmp_switch, refresh_snmp_data_for_switch
 from switch_data import get_switch_data
 from group_interfaces import group_interfaces_by_stack
 import db
+import ipaddress
 import logging
 from subnets import get_all_subnets, get_subnet, update_subnet
 from ips import get_ips_for_subnet, get_ip, add_ip_to_subnet, update_ip, get_ips_for_availability, scan_and_insert_ip, detect_hosts, scan_ips
@@ -246,114 +247,148 @@ def show_switch(switch_id):
         logging.error(f"Error showing switch {switch_id}: {e}")
         flash('Error showing switch. Check logs for details.', 'danger')
         return redirect(url_for('index'))
+
+
+
 @app.route('/subnets')
 @login_required
 def show_subnets():
     subnets = get_all_subnets()
     return render_template('subnets.html', title='Subnets', subnets=subnets)
 
-@app.route('/subnet/<int:subnet_id>')
+
+@app.route('/subnet/<int:subnet_id>', methods=['GET', 'POST'])
 @login_required
 def show_subnet_ips(subnet_id):
-    # Fetch the subnet and IPs information
-    subnet, ips = get_ips_for_subnet(subnet_id)
-    
-    # Create dictionaries for used IPs and their data
-    used_ips = {IPv4Address(ip['address']): ip['id'] for ip in ips}
-    ip_data = {IPv4Address(ip['address']): ip for ip in ips}
-    
-    # Calculate available IPs within the subnet range
+    if request.method == 'POST':
+        ip_id = request.form.get('ip_id')
+        if ip_id:
+            data = request.form.to_dict()
+
+            # Convert checkbox values to integers (0 or 1)
+            checkbox_fields = ['is_resolvable', 'is_scannable', 'show_status', 'is_gateway', 'is_favorite']
+            for field in checkbox_fields:
+                data[field] = 1 if field in data else 0
+
+            # Handle 'switch_id' separately
+            switch_id = data.get('switch_id', '').strip()
+            data['switch_id'] = int(switch_id) if switch_id.isdigit() else None
+
+            # Handle optional fields
+            optional_fields = ['hostname', 'mac', 'description', 'note', 'location', 'port']
+            for field in optional_fields:
+                data[field] = data.get(field) or None
+
+            # Log the data for debugging
+            logging.debug(f"Updating IP ID {ip_id} with data: {data}")
+
+            # Update IP in the database
+            update_ip(ip_id, **data)
+            flash('IP updated successfully!', 'success')
+            return redirect(url_for('show_subnet_ips', subnet_id=subnet_id))
+
+    # Handle GET request
+    subnet = get_subnet(subnet_id)
+    if not subnet:
+        flash('Subnet not found.', 'error')
+        return redirect(url_for('home'))  # Replace 'home' with your desired route
+
+    ips = get_ips_for_subnet(subnet_id)[1]  # Assuming get_ips_for_subnet returns (subnet, ips)
+    used_ips = {str(ipaddress.IPv4Address(ip['address'])): ip['id'] for ip in ips if isinstance(ip, dict)}
+    ip_data = {str(ipaddress.IPv4Address(ip['address'])): ip for ip in ips if isinstance(ip, dict)}
+
+    # Fetch available IPs
     subnet_range = ip_network(subnet['range'])
-    available_ips = [ip for ip in subnet_range.hosts() if ip not in used_ips]
-    
-    # Count used and available IPs for the chart
-    used_ips_count = len(used_ips)
-    available_ips_count = len(available_ips)
-    
-    # Count IPs by status
+    available_ips = [str(ip) for ip in subnet_range.hosts() if str(ip) not in used_ips]
+
+    # Count statuses
     status_counts = {
         'Active': 0,
         'Down': 0,
         'Warning': 0,
-        'Unknown': 0
+        'Unknown': 0,
+        'Available': len(available_ips)
     }
     for ip in ips:
-        status = int(ip['status']) if ip['status'] is not None else -1
-        if status == 1:
-            status_counts['Active'] += 1
-        elif status == 0:
-            status_counts['Down'] += 1
-        elif status == 3:
-            status_counts['Warning'] += 1
-        else:
-            status_counts['Unknown'] += 1
+        if isinstance(ip, dict):
+            status = int(ip['status']) if ip.get('status') and str(ip['status']).isdigit() else -1
+            if status == 1:
+                status_counts['Active'] += 1
+            elif status == 0:
+                status_counts['Down'] += 1
+            elif status == 3:
+                status_counts['Warning'] += 1
+            else:
+                status_counts['Unknown'] += 1
 
-
-    
-    # Add available IPs to the counts
-    status_counts['Available'] = available_ips_count
-    
-    chart_series = [status_counts['Active'], status_counts['Down'], status_counts['Warning'], status_counts['Available']]
+    # Prepare chart data
+    chart_series = [
+        status_counts['Active'],
+        status_counts['Down'],
+        status_counts['Warning'],
+        status_counts['Available']
+    ]
     chart_labels = ['Active', 'Down', 'Warning', 'Available']
     chart_colors_list = ['#34d399', '#f87171', '#fbbf24', '#9ca3af']
-    
-    # Render the template, passing the calculated values to the frontend
+
+    switches = get_all_switches()
+
     return render_template(
-        'ips.html', 
-        title=f'IPs in Subnet {subnet["name"]}', 
-        subnet=subnet, 
-        ips=ips, 
-        available_ips=available_ips, 
+        'ips.html',
+        title=f'IPs in Subnet {subnet["name"]}',
+        subnet=subnet,
+        ips=ips,
+        available_ips=available_ips,
         used_ips=used_ips,
         ip_data=ip_data,
         subnet_range=subnet_range,
-        used_ips_count=used_ips_count, 
-        available_ips_count=available_ips_count,
         status_counts=status_counts,
         chart_series=chart_series,
         chart_labels=chart_labels,
-        chart_colors_list=chart_colors_list
+        chart_colors_list=chart_colors_list,
+        switches=switches,
+        ip=None  # Initialize ip as None for the Edit Modal
     )
 
 
 
-@app.route('/edit-ip/<int:ip_id>', methods=['GET', 'POST'])
+
+@app.route('/edit-ip/<int:ip_id>', methods=['POST'])
 @login_required
 def edit_ip(ip_id):
-    if request.method == 'POST':
-        data = request.form.to_dict()
+    data = request.form.to_dict()
 
-        # Convert checkbox values to integers (0 or 1)
-        data['is_resolvable'] = 1 if 'is_resolvable' in data else 0
-        data['is_scannable'] = 1 if 'is_scannable' in data else 0
-        data['show_status'] = 1 if 'show_status' in data else 0
-        data['is_gateway'] = 1 if 'is_gateway' in data else 0
-        data['is_favorite'] = 1 if 'is_favorite' in data else 0
+    # Convert checkbox values to integers (0 or 1)
+    data['is_resolvable'] = 1 if 'is_resolvable' in data else 0
+    data['is_scannable'] = 1 if 'is_scannable' in data else 0
+    data['show_status'] = 1 if 'show_status' in data else 0
+    data['is_gateway'] = 1 if 'is_gateway' in data else 0
+    data['is_favorite'] = 1 if 'is_favorite' in data else 0
 
-        # Handle 'switch_id' separately
-        switch_id = data.get('switch_id', '').strip()
-        if switch_id == '':
-            data['switch_id'] = None
-        else:
-            try:
-                data['switch_id'] = int(switch_id)
-            except ValueError:
-                data['switch_id'] = None  # Or handle the error as needed
-                logging.warning(f"Invalid switch_id value received: {switch_id}")
+    # Handle 'switch_id' separately
+    switch_id = data.get('switch_id', '').strip()
+    if switch_id == '':
+        data['switch_id'] = None
+    else:
+        try:
+            data['switch_id'] = int(switch_id)
+        except ValueError:
+            data['switch_id'] = None  # Or handle the error as needed
+            logging.warning(f"Invalid switch_id value received: {switch_id}")
 
-        # Handle optional fields
-        optional_fields = ['hostname', 'mac', 'description', 'note', 'location', 'port']
-        for field in optional_fields:
-            if field not in data or data[field].strip() in ('', 'None'):
-                data[field] = None
+    # Handle optional fields
+    optional_fields = ['hostname', 'mac', 'description', 'note', 'location', 'port']
+    for field in optional_fields:
+        if field not in data or data[field].strip() in ('', 'None'):
+            data[field] = None
 
-        # Debugging output
-        logging.info(f"Updating IP with data: {data}")
+    # Debugging output
+    logging.info(f"Updating IP with data: {data}")
 
-        # Update IP and redirect
-        update_ip(ip_id, **data)
-        flash('IP updated successfully!', 'success')
-        return redirect(url_for('show_subnet_ips', subnet_id=data['subnet_id']))
+    # Update IP and redirect
+    update_ip(ip_id, **data)
+    flash('IP updated successfully!', 'success')
+    return redirect(url_for('show_subnet_ips', subnet_id=data['subnet_id']))
 
     # Fetch the current IP and available switches
     current_ip = get_ip(ip_id)
