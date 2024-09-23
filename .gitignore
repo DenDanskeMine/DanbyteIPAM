@@ -5,3 +5,4 @@ venv/
 .vscode-server/
 Project1/venv/
 Project1/venv
+Project1/node_modules/

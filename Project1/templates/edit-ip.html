@@ -1,0 +1,98 @@
+{% extends "base.html" %}
+{% block content %}
+
+<form method="POST">
+    <!-- Hidden field to store subnet_id -->
+    <input type="hidden" name="subnet_id" value="{{ ip.subnet_id }}">
+
+    <!-- IP Address Dropdown -->
+    <div class="mb-4">
+        <label for="address" class="block text-sm font-medium text-gray-400 dark:text-gray-300">IP Address</label>
+        <select name="address" id="address" class="mt-1 block w-full bg-gray-700 text-white border-gray-600 rounded-md shadow-sm">
+            {% for ip_address in available_ips %}
+            <option value="{{ ip_address }}" {% if ip_address == ip.address %}selected{% endif %}>{{ ip_address }}</option>
+            {% endfor %}
+        </select>
+    </div>
+
+    <!-- Switch Dropdown -->
+    <div class="mb-4">
+        <label for="switch_id" class="block text-sm font-medium text-gray-400 dark:text-gray-300">Switch</label>
+        <select name="switch_id" id="switch_id" class="mt-1 block w-full bg-gray-700 text-white border-gray-600 rounded-md shadow-sm">
+            <option value="">Select a switch</option>
+            {% for switch in switches %}
+            <option value="{{ switch.id }}" {% if switch.id == ip.switch_id %}selected{% endif %}>{{ switch.hostname }}</option>
+            {% endfor %}
+        </select>
+    </div>
+
+    <!-- MAC Address Field -->
+    <div class="mb-4">
+        <label for="mac" class="block text-sm font-medium text-gray-400 dark:text-gray-300">MAC Address</label>
+        <input type="text" name="mac" id="mac" value="{{ ip.mac }}" class="mt-1 block w-full bg-gray-700 text-white border-gray-600 rounded-md shadow-sm">
+    </div>
+
+    <!-- Hostname Field -->
+    <div class="mb-4">
+        <label for="hostname" class="block text-sm font-medium text-gray-400 dark:text-gray-300">Hostname</label>
+        <input type="text" name="hostname" id="hostname" value="{{ ip.hostname }}" class="mt-1 block w-full bg-gray-700 text-white border-gray-600 rounded-md shadow-sm">
+    </div>
+
+    <!-- Description Field -->
+    <div class="mb-4">
+        <label for="description" class="block text-sm font-medium text-gray-400 dark:text-gray-300">Description</label>
+        <textarea name="description" id="description" class="mt-1 block w-full bg-gray-700 text-white border-gray-600 rounded-md shadow-sm">{{ ip.description }}</textarea>
+    </div>
+
+    <!-- Note Field -->
+    <div class="mb-4">
+        <label for="note" class="block text-sm font-medium text-gray-400 dark:text-gray-300">Note</label>
+        <textarea name="note" id="note" class="mt-1 block w-full bg-gray-700 text-white border-gray-600 rounded-md shadow-sm">{{ ip.note }}</textarea>
+    </div>
+
+    <!-- Location Field -->
+    <div class="mb-4">
+        <label for="location" class="block text-sm font-medium text-gray-400 dark:text-gray-300">Location</label>
+        <input type="text" name="location" id="location" value="{{ ip.location }}" class="mt-1 block w-full bg-gray-700 text-white border-gray-600 rounded-md shadow-sm">
+    </div>
+
+    <!-- Port Field -->
+    <div class="mb-4">
+        <label for="port" class="block text-sm font-medium text-gray-400 dark:text-gray-300">Port</label>
+        <input type="text" name="port" id="port" value="{{ ip.port }}" class="mt-1 block w-full bg-gray-700 text-white border-gray-600 rounded-md shadow-sm">
+    </div>
+
+    <!-- Save Button -->
+    <div class="flex justify-end">
+        <button type="submit" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">Save</button>
+    </div>
+  <!-- Resolvable Toggle -->
+  <label class="inline-flex items-center mb-5 cursor-pointer">
+    <input type="checkbox" name="is_resolvable" value="1" class="sr-only peer" {% if ip.is_resolvable == 1 %} checked {% endif %}>
+    <div class="relative w-9 h-5 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600"></div>
+    <span class="ms-3 text-sm font-medium text-gray-900 dark:text-gray-300">Resolvable</span>
+</label>
+
+<!-- Show Status Toggle -->
+<label class="inline-flex items-center mb-5 cursor-pointer">
+    <input type="checkbox" name="show_status" value="1" class="sr-only peer" {% if ip.show_status == 1 %} checked {% endif %}>
+    <div class="relative w-9 h-5 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600"></div>
+    <span class="ms-3 text-sm font-medium text-gray-900 dark:text-gray-300">Show Status</span>
+</label>
+
+<!-- Gateway Toggle -->
+<label class="inline-flex items-center mb-5 cursor-pointer">
+    <input type="checkbox" name="is_gateway" value="1" class="sr-only peer" {% if ip.is_gateway == 1 %} checked {% endif %}>
+    <div class="relative w-9 h-5 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600"></div>
+    <span class="ms-3 text-sm font-medium text-gray-900 dark:text-gray-300">Gateway</span>
+</label>
+<!-- Favorite Toggle -->
+<label class="inline-flex items-center mb-5 cursor-pointer">
+    <input type="checkbox" name="is_favorite" value="1" class="sr-only peer" {% if ip.is_favorite == 1 %} checked {% endif %}>
+    <div class="relative w-9 h-5 bg-gray-200 rounded-full peer dark:bg-gray-700 peer-focus:ring-4 peer-focus:ring-yellow-300 dark:peer-focus:ring-yellow-800 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-yellow-400"></div>
+    <span class="ms-3 text-sm font-medium text-gray-900 dark:text-gray-300">Add to Favorite</span>
+</label>
+
+</form>
+
+{% endblock %}

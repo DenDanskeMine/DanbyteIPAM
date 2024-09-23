@@ -1,66 +1,40 @@
 {% extends "base.html" %}
 {% block content %}
 
-<div class="grid grid-cols-3 gap-4 mb-4">
-    <!-- Switch Information -->
-    <div class="flex items-start justify-start h-auto rounded bg-gray-50 dark:bg-gray-800 p-4">
-        <div class="h-auto rounded bg-gray-50 dark:bg-gray-800 p-4">
-            <div class="text-2xl text-gray-400 dark:text-gray-500">
-                Switch Details
-            </div>
-            <div class="mx-auto max-w-7xl px-6 lg:px-8">
-                <dl class="grid grid-cols-1 gap-x-8 gap-y-16 text-center lg:grid-cols-3">
-                    <div class="mx-auto flex max-w-xs flex-col gap-y-4">
-                        <dt class="text-base leading-7 text-gray-600">IP Address</dt>
-                        <dd class="order-first text-1xl font-semibold tracking-tight text-white sm:text-2xl">{{ switch.ip_address }}</dd>
-                    </div>
-                    <div class="mx-auto flex max-w-xs flex-col gap-y-4">
-                        <dt class="text-base leading-7 text-gray-600">Hostname</dt>
-                        <dd class="order-first text-1xl font-semibold tracking-tight text-white sm:text-2xl">{{ switch.hostname }}</dd>
-                    </div>
-                    <div class="mx-auto flex max-w-xs flex-col gap-y-4">
-                        <dt class="text-base leading-7 text-gray-600">Location</dt>
-                        <dd class="order-first text-1xl font-semibold tracking-tight text-white sm:text-2xl">{{ switch.location }}</dd>
-                    </div>
-                </dl>
-            </div>
-        </div>
-    </div>
-
-    <!-- Buttons for refreshing and toggling views -->
-    <div class="flex items-start justify-start h-auto rounded bg-gray-50 dark:bg-gray-800 p-4">
-        <div class="h-auto rounded bg-gray-50 dark:bg-gray-800 p-4">
-            <div class="text-2xl text-gray-400 dark:text-gray-500">
-                Actions
-            </div>
-            <div class="flex justify-center space-x-2 mb-2">
-                <a href="{{ url_for('refresh_snmp_data_for_switch_route', switch_id=switch_id) }}" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-700">Refresh</a>
-                <button class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-700" onclick="toggleViewMode()">Switch View</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Placeholder for future use -->
-    <div class="flex items-center justify-center h-auto rounded bg-gray-50 dark:bg-gray-800 p-4">
-        <p class="text-2xl text-gray-400 dark:text-gray-500">
-            Placeholder for future use
-        </p>
+<!-- Info Banner -->
+<div class="bg-blue-600 text-white py-4 mb-4 rounded-lg">
+    <div class="container mx-auto px-4">
+        <h1 class="text-2xl font-semibold">Info</h1> <!-- Using switch.hostname -->
+        <p class="text-sm">Details and interfaces for this switch are shown below.</p>
+        <p class="text-sm">Click on an interface to view more details.</p>
     </div>
 </div>
 
+<!-- Switch Information -->
+<div  class="block bg-gray-900 dark:bg-gray-800 p-6 rounded-lg shadow hover:bg-gray-800 dark:hover:bg-gray-700">
+    <div class="flex items-center space-x-6">
+        <i class="fa-solid fa-network-wired text-blue-500 text-5xl"></i>
+        <div class="text-left">
+            <div class="text-2xl font-semibold text-white">{{ switch.hostname or 'Problems?'}}</div>
+            <div class="text-lg text-gray-400">{{ switch.ip_address or 'Not available' }}</div>
+            <div class="text-lg text-gray-400">{{ switch.location or 'Unknown' }}</div>
+        </div>
+    </div>
+
+
 <!-- Display stack groups -->
-<div class="flex flex-col gap-y-4 mt-4"> <!-- Changed from flex-wrap to flex-col to stack vertically -->
+<div class="flex flex-col gap-y-4 mt-4">
     {% for stack, groups in stack_groups.items() %}
-        <div class="flex flex-col items-start mb-4"> <!-- Added margin to stack groups -->
-            <h4 class="text-lg font-semibold">{{ stack }}</h4>
+        <div class="flex flex-col items-start mb-4">
+            <h4 class="text-lg font-semibold text-white">{{ stack }}</h4>
             <div class="flex space-x-1 mb-1">
                 {% for interface in groups.odd %}
                     <div class="status-box 
                         {% if interface.shutdown == '2' %} bg-gray-500 
                         {% elif interface.status == '1' %} bg-green-500 
                         {% elif interface.status == '2' %} bg-red-500 
-                        {% else %} bg-gray-500 {% endif %}
-                        text-white font-bold rounded flex items-center justify-center w-8 h-8"
+                        {% else %} bg-gray-500 {% endif %} 
+                        text-white font-bold rounded flex items-center justify-center w-8 h-8" 
                         onclick="openModal('{{ interface.name }}', '{{ interface.vlan }}', '{{ interface.mac }}')">
                         {{ interface.name.split('/')[-1] }} <!-- Only display the interface number -->
                     </div>
@@ -68,12 +42,12 @@
             </div>
             <div class="flex space-x-1">
                 {% for interface in groups.even %}
-                    <div class="status-box
+                    <div class="status-box 
                         {% if interface.shutdown == '2' %} bg-gray-500 
                         {% elif interface.status == '1' %} bg-green-500 
                         {% elif interface.status == '2' %} bg-red-500 
-                        {% else %} bg-gray-500 {% endif %}
-                        text-white font-bold rounded flex items-center justify-center w-8 h-8"
+                        {% else %} bg-gray-500 {% endif %} 
+                        text-white font-bold rounded flex items-center justify-center w-8 h-8" 
                         onclick="openModal('{{ interface.name }}', '{{ interface.vlan }}', '{{ interface.mac }}')">
                         {{ interface.name.split('/')[-1] }} <!-- Only display the interface number -->
                     </div>
@@ -87,7 +61,7 @@
 <div id="interfaceModal" class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 hidden">
     <div class="bg-white dark:bg-gray-800 rounded-lg p-4 max-w-md w-full">
         <div class="flex justify-between items-center mb-4">
-            <h3 class="text-lg font-semibold">Interface Details</h3>
+            <h3 class="text-lg font-semibold text-white">Interface Details</h3>
             <button onclick="closeModal()" class="text-gray-500 hover:text-gray-700 dark:hover:text-gray-300">&times;</button>
         </div>
         <div id="modalContent" class="text-gray-700 dark:text-gray-300">
@@ -98,7 +72,7 @@
         </div>
     </div>
 </div>
-
+</div>
 <script>
     function openModal(interfaceName) {
         document.getElementById('modalContent').innerText = interfaceName;

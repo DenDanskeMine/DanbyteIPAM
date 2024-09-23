@@ -1,135 +1,111 @@
 {% extends "base.html" %}
 {% block content %}
 
+<!-- Container with Border and Padding for Main Content -->
+<div class="p-4 border-2 border-gray-300 rounded-lg dark:border-gray-800 bg-gray-900 dark:bg-gray-800">
+    
+    <!-- Grouping Switches and Subnets in a Flexbox Container -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
 
-    <div class="p-4 border-2 border-gray-200 border-dashed rounded-lg dark:border-gray-700">
-       <div class="grid grid-cols-3 gap-4 mb-4">
-         <div class="flex items-start justify-start h-50 rounded bg-gray-50 dark:bg-gray-800">
-            <div class="h-auto rounded bg-gray-50 dark:bg-gray-800 p-4">
-                <div class="text-2xl text-gray-400 dark:text-gray-500">
-                    Favorite Switches 
-                    <span class="text-justify text-green-400 dark:text-green-400"> ({{ count_favorite_switches }}) </span>
-                </div>
-                {% for switch in favorite_switches %}
-
-                <div class="mx-auto max-w-7xl px-6 lg:px-8">
-                    <dl class="grid grid-cols-1 gap-x-8 gap-y-16 text-center lg:grid-cols-3">
-                      <div class="mx-auto flex max-w-xs flex-col gap-y-4">
-                        <dt class="text-base leading-7 text-gray-600">IP Address</dt>
-                        <dd class="order-first text-1xl font-semibold tracking-tight text-white sm:text-2xl">{{ switch.ip_address}}</dd>
-                      </div>
-                      <div class="mx-auto flex max-w-xs flex-col gap-y-4">
-                        <dt class="text-base leading-7 text-gray-600">Hostname</dt>
-                        <dd class="order-first text-1xl font-semibold tracking-tight text-white sm:text-2xl">{{ switch.hostname }}</dd>
-                      </div>
-                      <div class="mx-auto flex max-w-xs flex-col gap-y-4">
-                        <dt class="text-base leading-7 text-gray-600">Location</dt>
-                        <dd class="order-first text-1xl font-semibold tracking-tight text-white sm:text-2xl">{{ switch.location }}</dd>
-                      </div>
-                    </dl>
-                  </div>
-                {% endfor %}
-                <form action="{{ url_for('collect_snmp_data') }}" method="post">
-                    <button type="submit" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
-                        Collect SNMP Data
-                    </button>
-                </form>
-            </div>
-        </div>
-        <div class="h-auto rounded bg-gray-50 dark:bg-gray-800 p-4">
-            <div class="text-2xl text-gray-400 dark:text-gray-500">
+        <!-- Favorite Switches Section -->
+        <div class="bg-gray-800 p-6 rounded-lg shadow-lg border-2 border-blue-200">
+            <div class="text-3xl text-gray-100 mb-6 border-b-2 border-gray-600 pb-2">
                 Favorite Switches 
-                <span class="text-justify text-orange-400 dark:text-orange-400"> ({{ count_favorite_switches }}) </span>
+                <span class="text-blue-400">({{ count_favorite_switches }})</span>
             </div>
-            <ul class="mt-2 space-y-1 text-gray-200">
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {% for switch in favorite_switches %}
-                    <li>{{ switch[0] }}</li>
+                <a href="{{ url_for('show_switch', switch_id=switch.id) }}" class="block bg-gray-700 p-4 rounded-lg shadow-md hover:bg-gray-600 transition-all duration-200">
+                    <div class="flex items-center space-x-4">
+                        <!-- Icon for Switch -->
+                        <i class="fa-solid fa-right-left text-blue-400 text-4xl"></i>
+
+                        <!-- Switch Information -->
+                        <div class="text-left">
+                            <div class="text-xl font-medium text-white">{{ switch.hostname }}</div>
+                            <div class="text-sm text-gray-400">{{ switch.location }}</div>
+                        </div>
+                    </div>
+                </a>
                 {% endfor %}
-            </ul>
+            </div>
+
+            <!-- Collect SNMP Data Button -->
+            <form action="{{ url_for('collect_snmp_data') }}" method="post" class="mt-6">
+                <button type="submit" class="bg-blue-500 hover:bg-blue-600 text-white font-medium py-2 px-4 rounded transition-colors duration-200">
+                    Update
+                </button>
+            </form>
         </div>
-          <div class="flex items-center justify-center h-auto rounded bg-gray-50 dark:bg-gray-800">
-             <p class="text-2xl text-gray-400 dark:text-gray-500">
-                <svg class="w-3.5 h-3.5" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 18 18">
-                   <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 1v16M1 9h16"/>
-                </svg>
-             </p>
-          </div>
-       </div>
-       <div class="flex items-center justify-center h-48 mb-4 rounded bg-gray-50 dark:bg-gray-800">
-          <p class="text-2xl text-gray-400 dark:text-gray-500">
-             <svg class="w-3.5 h-3.5" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 18 18">
-                <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 1v16M1 9h16"/>
-             </svg>
-          </p>
-       </div>
-       <div class="grid grid-cols-2 gap-4 mb-4">
-          <div class="flex items-center justify-center rounded bg-gray-50 h-28 dark:bg-gray-800">
-             <p class="text-2xl text-gray-400 dark:text-gray-500">
-                <svg class="w-3.5 h-3.5" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 18 18">
-                   <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 1v16M1 9h16"/>
-                </svg>
-             </p>
-          </div>
-          <div class="flex items-center justify-center rounded bg-gray-50 h-28 dark:bg-gray-800">
-             <p class="text-2xl text-gray-400 dark:text-gray-500">
-                <svg class="w-3.5 h-3.5" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 18 18">
-                   <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 1v16M1 9h16"/>
-                </svg>
-             </p>
-          </div>
-          <div class="flex items-center justify-center rounded bg-gray-50 h-28 dark:bg-gray-800">
-             <p class="text-2xl text-gray-400 dark:text-gray-500">
-                <svg class="w-3.5 h-3.5" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 18 18">
-                   <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 1v16M1 9h16"/>
-                </svg>
-             </p>
-          </div>
-          <div class="flex items-center justify-center rounded bg-gray-50 h-28 dark:bg-gray-800">
-             <p class="text-2xl text-gray-400 dark:text-gray-500">
-                <svg class="w-3.5 h-3.5" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 18 18">
-                   <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 1v16M1 9h16"/>
-                </svg>
-             </p>
-          </div>
-       </div>
-       <div class="flex items-center justify-center h-48 mb-4 rounded bg-gray-50 dark:bg-gray-800">
-          <p class="text-2xl text-gray-400 dark:text-gray-500">
-             <svg class="w-3.5 h-3.5" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 18 18">
-                <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 1v16M1 9h16"/>
-             </svg>
-          </p>
-       </div>
-       <div class="grid grid-cols-2 gap-4">
-          <div class="flex items-center justify-center rounded bg-gray-50 h-28 dark:bg-gray-800">
-             <p class="text-2xl text-gray-400 dark:text-gray-500">
-                <svg class="w-3.5 h-3.5" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 18 18">
-                   <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 1v16M1 9h16"/>
-                </svg>
-             </p>
-          </div>
-          <div class="flex items-center justify-center rounded bg-gray-50 h-28 dark:bg-gray-800">
-             <p class="text-2xl text-gray-400 dark:text-gray-500">
-                <svg class="w-3.5 h-3.5" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 18 18">
-                   <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 1v16M1 9h16"/>
-                </svg>
-             </p>
-          </div>
-          <div class="flex items-center justify-center rounded bg-gray-50 h-28 dark:bg-gray-800">
-             <p class="text-2xl text-gray-400 dark:text-gray-500">
-                <svg class="w-3.5 h-3.5" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 18 18">
-                   <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 1v16M1 9h16"/>
-                </svg>
-             </p>
-          </div>
-          <div class="flex items-center justify-center rounded bg-gray-50 h-28 dark:bg-gray-800">
-             <p class="text-2xl text-gray-400 dark:text-gray-500">
-                <svg class="w-3.5 h-3.5" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 18 18">
-                   <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 1v16M1 9h16"/>
-                </svg>
-             </p>
-          </div>
-       </div>
+
+        <!-- Favorite Subnets Section -->
+        <div class="bg-gray-800 p-6 rounded-lg shadow-lg border-2 border-orange-200">
+            <div class="text-3xl text-gray-100 mb-6 border-b-2 border-gray-600 pb-2">
+                Favorite Subnets 
+                <span class="text-orange-400">({{ count_favorite_subnets }})</span>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {% for subnet in favorite_subnets %}
+                <a href="#" class="block bg-gray-700 p-4 rounded-lg shadow-md hover:bg-gray-600 transition-all duration-200">
+                    <div class="flex items-center space-x-4">
+                        <!-- Icon for Subnet -->
+                        <i class="fa-solid fa-diagram-project text-orange-400 text-4xl"></i>
+
+                        <!-- Subnet Information -->
+                        <div class="text-left">
+                            <div class="text-xl font-medium text-white">{{ subnet.name }}</div>
+                            <div class="text-sm text-gray-400">{{ subnet.range }}</div>
+                        </div>
+                    </div>
+                </a>
+                {% endfor %}
+            </div>
+        </div>
+        
     </div>
- </div>
- 
+
+    <!-- Favorite IPs Section -->
+    <div class="bg-gray-800 p-6 rounded-lg shadow-lg border-2 border-green-200">
+        <div class="text-3xl text-gray-100 mb-6 border-b-2 border-gray-600 pb-2">
+            Favorite IPs 
+            <span class="text-green-400">({{ count_favorite_ips }})</span>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {% for ip in favorite_ips %}
+            <a href="{{ url_for('edit_ip', ip_id=ip.id, subnet_id=ip.subnet_id) }}" class="block bg-gray-700 p-4 rounded-lg shadow-md hover:bg-gray-600 transition-all duration-200">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center space-x-4">
+                        <!-- Conditional Icon for IP based on status -->
+                        {% if ip.status == '1' %}
+                        <i class="fa-solid fa-network-wired text-green-400 text-4xl"></i>
+                        {% elif ip.status == '0' %}
+                        <i class="fa-solid fa-network-wired text-red-400 text-4xl"></i>
+                        {% elif ip.status == '3' %}
+                        <i class="fa-solid fa-network-wired text-yellow-400 text-4xl"></i>
+                        {% else %}
+                        <i class="fa-solid fa-network-wired text-gray-400 text-4xl"></i>
+                        {% endif %}
+
+                        <!-- IP Information -->
+                        <div class="text-left">
+                            <div class="text-xl font-medium text-white">{{ ip.address }}</div>
+                            <div class="text-sm text-gray-400">{{ ip.status }}</div>
+                        </div>
+                    </div>
+
+                    <!-- Blinking Warning Icon for Red Status -->
+                    {% if ip.status == '0' %}
+                    <i class="fa-solid fa-exclamation-triangle text-red-400 text-xl animate-pulse"></i>
+                    {% endif %}
+                </div>
+            </a>
+            {% endfor %}
+        </div>
+    </div>
+
+</div>
+
 {% endblock %}

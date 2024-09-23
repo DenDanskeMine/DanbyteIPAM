@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="min-h-screen bg-gray-900 flex flex-col justify-center">
+    <div class="container mx-auto max-w-md p-4 bg-gray-800 rounded-lg shadow-lg">
+        <h2 class="text-3xl font-bold text-white text-center mb-6">Register New User</h2>
+
+        <form method="POST" action="{{ url_for('register') }}">
+            <!-- Username -->
+            <div class="mb-4">
+                <label for="username" class="block text-sm font-medium text-gray-400 dark:text-gray-300">Username</label>
+                <input type="text" name="username" id="username" class="mt-1 block w-full bg-gray-700 text-white border-gray-600 rounded-md shadow-sm" required>
+            </div>
+
+            <!-- Password -->
+            <div class="mb-4">
+                <label for="password" class="block text-sm font-medium text-gray-400 dark:text-gray-300">Password</label>
+                <input type="password" name="password" id="password" class="mt-1 block w-full bg-gray-700 text-white border-gray-600 rounded-md shadow-sm" required>
+            </div>
+
+            <!-- First Name -->
+            <div class="mb-4">
+                <label for="name" class="block text-sm font-medium text-gray-400 dark:text-gray-300">First Name</label>
+                <input type="text" name="name" id="name" class="mt-1 block w-full bg-gray-700 text-white border-gray-600 rounded-md shadow-sm" required>
+            </div>
+
+            <!-- Last Name -->
+            <div class="mb-4">
+                <label for="lastname" class="block text-sm font-medium text-gray-400 dark:text-gray-300">Last Name</label>
+                <input type="text" name="lastname" id="lastname" class="mt-1 block w-full bg-gray-700 text-white border-gray-600 rounded-md shadow-sm" required>
+            </div>
+
+            <!-- Admin Only: Role (Read-only) -->
+            <div class="mb-4">
+                <label for="ro" class="block text-sm font-medium text-gray-400 dark:text-gray-300">Read-Only Access (Optional)</label>
+                <input type="checkbox" name="ro" id="ro" class="mt-1 block w-4 h-4 bg-gray-700 text-white border-gray-600 rounded-md shadow-sm">
+                <span class="text-sm text-gray-500">Select if the user should have read-only access.</span>
+            </div>
+
+            <!-- Admin Only: Is Admin -->
+            <div class="mb-4">
+                <label for="is_admin" class="block text-sm font-medium text-gray-400 dark:text-gray-300">Grant Admin Access (Optional)</label>
+                <input type="checkbox" name="is_admin" id="is_admin" class="mt-1 block w-4 h-4 bg-gray-700 text-white border-gray-600 rounded-md shadow-sm">
+                <span class="text-sm text-gray-500">Select if the user should have admin access.</span>
+            </div>
+
+            <!-- Submit Button -->
+            <div class="flex justify-end">
+                <button type="submit" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">Register</button>
+            </div>
+        </form>
+        
+        <p class="text-gray-400 text-center mt-4">
+            <a href="{{ url_for('index') }}" class="text-blue-500 hover:text-blue-700">Back to Dashboard</a>
+        </p>
+    </div>
+</div>
+{% endblock %}
