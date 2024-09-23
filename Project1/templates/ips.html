@@ -65,7 +65,7 @@
                         {% else %}
                             {% set bg_color = 'bg-blue-400 hover:bg-blue-500' %}
                         {% endif %}
-                        <a href="{{ url_for('show_ip', ip_id=ip_id) }}" 
+                        <a href="{{ url_for('edit_ip', ip_id=ip_id) }}" 
                            class="{{ bg_color }} ip-grid-item text-white font-bold p-1 rounded transition duration-200 ease-in-out text-center"
                            data-status="{{ status }}"
                            style="font-size: 0.75rem;">
@@ -83,21 +83,25 @@
                 {% endfor %}
                 
             </div>
-            <button onclick="toggleModal()" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded mt-4">
-                Add IP
-            </button>
-            <form action="{{ url_for('scan_ips_route') }}" method="post">
-                <input type="hidden" name="subnet_id" value="{{ subnet['id'] }}">
-                <button type="submit" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded mt-4">
-                    Scan IPs
+            <div class="float-left">
+                <span class="float-left m-2">
+                <button onclick="toggleModal()" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded mt-4 float-left">
+                    Add IP
                 </button>
-            </form>
-            <form action="{{ url_for('detect_hosts_route') }}" method="post">
-                <input type="hidden" name="subnet_id" value="{{ subnet['id'] }}">
-                <button type="submit" class="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded mt-4">
-                    Detect Hosts
-                </button>
-            </form>
+                </span>
+                <form action="{{ url_for('scan_ips_route') }}" method="post" class="float-left m-2">
+                    <input type="hidden" name="subnet_id" value="{{ subnet['id'] }}">
+                    <button type="submit" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded mt-4 float-left">
+                        Scan IPs
+                    </button>
+                </form>
+                <form action="{{ url_for('detect_hosts_route') }}" method="post" class="float-left m-2">
+                    <input type="hidden" name="subnet_id" value="{{ subnet['id'] }}">
+                    <button type="submit" class="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded mt-4 float-left">
+                        Detect Hosts
+                    </button>
+                </form>
+            </div>
         </div>
 
 
@@ -181,6 +185,26 @@
                             </svg>
                         </span>
                     </th>
+                    <th>
+                        <span class="flex items-center">
+                            Hostname                           
+                              <svg class="w-4 h-4 ms-1" aria-hidden="true" xmlns="http://www.w3.org/2000/svg"
+                                fill="none" viewBox="0 0 24 24">
+                                <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"
+                                    stroke-width="2" d="M8 9l4-4 4 4m0 6l-4 4-4-4" />
+                            </svg>
+                        </span>
+                    </th>
+                    <th>
+                        <span class="flex items-center">
+                            Decsription                           
+                              <svg class="w-4 h-4 ms-1" aria-hidden="true" xmlns="http://www.w3.org/2000/svg"
+                                fill="none" viewBox="0 0 24 24">
+                                <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"
+                                    stroke-width="2" d="M8 9l4-4 4 4m0 6l-4 4-4-4" />
+                            </svg>
+                        </span>
+                    </th>
                     <!-- Continue for all other columns -->
                     <th>
                         <span class="flex items-center">
@@ -216,7 +240,14 @@
                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">
                         {{ ip.address }}
                     </td>
-                    <!-- Repeat for other columns -->
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                        {{ ip.hostname }}
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                        {{ ip.description }}
+                    </td>
+
+
                     <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
                         <div class="flex space-x-4">
                             <a href="{{ url_for('show_ip', ip_id=ip.id) }}" class="text-indigo-600 hover:text-indigo-900">
@@ -227,6 +258,7 @@
                             </a>
                         </div>
                     </td>
+
                 </tr>
                 {% endfor %}
             </tbody>

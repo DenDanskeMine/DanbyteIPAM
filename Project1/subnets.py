@@ -39,16 +39,7 @@ def add_new_subnet(name, range):
         cursor.execute(
             'INSERT INTO SUBNETS (name, `range`) VALUES (%s, %s)',
             (name, range)
-        )        $TTL    604800
-        @       IN      SOA     ns.danbyte.lan. admin.danbyte.lan. (
-                                      2         ; Serial
-                                 604800         ; Refresh
-                                  86400         ; Retry
-                                2419200         ; Expire
-                                 604800 )       ; Negative Cache TTL
-        ;
-        @       IN      NS      ns.danbyte.lan.
-        10      IN      PTR     hostname.danbyte.lan.
+        )
         conn.commit()
     except Exception as e:
         logging.error(f"Error adding new subnet: {e}")
