@@ -15,6 +15,8 @@ from functools import wraps
 from werkzeug.security import generate_password_hash, check_password_hash
 from collections import defaultdict
 import asyncio
+from asgiref.wsgi import WsgiToAsgi
+
 
 
 # Configure logging
@@ -22,7 +24,7 @@ logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %
 
 app = Flask(__name__)
 app.secret_key = 'supersecretkey'
-
+asgi_app = WsgiToAsgi(app)
 
 @app.context_processor
 def inject_switches():
@@ -105,7 +107,7 @@ def register():
 def scan_ips_route():
     subnet_id = request.form.get('subnet_id')
     logging.info(f"Received request to scan subnet ID: {subnet_id}")
-    scan_ips(subnet_id)
+    asyncio.run(scan_ips(subnet_id))
     flash('IP scan completed!', 'success')
     return redirect(url_for('show_subnet_ips', subnet_id=subnet_id) if subnet_id else url_for('index'))
 
@@ -114,10 +116,9 @@ def scan_ips_route():
 def detect_hosts_route():
     subnet_id = request.form.get('subnet_id')
     logging.info(f"Received request to detect hosts in subnet ID: {subnet_id}")
-    detect_hosts(subnet_id)
+    asyncio.run(detect_hosts(subnet_id))
     flash('Host detection completed!', 'success')
     return redirect(url_for('show_subnet_ips', subnet_id=subnet_id) if subnet_id else url_for('index'))
-
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':

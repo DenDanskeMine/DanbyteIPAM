@@ -5,10 +5,11 @@ import subprocess
 import socket
 import datetime
 import ipaddress
+import asyncio
 
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
 
-def scan_ips(subnet_id=None):
+async def scan_ips(subnet_id=None):
     logging.info("Starting IP scan")
 
     conn = db.get_db_connection()
@@ -27,16 +28,79 @@ def scan_ips(subnet_id=None):
 
     logging.info(f"Found {len(ips)} IPs to scan")
 
+    tasks = []
     for ip_record in ips:
         ip = ip_record['address']
         subnet_id = ip_record['subnet_id']
-        scan_and_resolve(ip, subnet_id)
+        tasks.append(scan_and_resolve(ip, subnet_id))
+
+    await asyncio.gather(*tasks)
 
     logging.info("IP scan completed")
 
-def scan_and_resolve(ip, subnet_id):
-    is_online = ping_ip(ip)
-    hostname = resolve_hostname(ip) if is_online else None
+
+
+
+
+async def ping_ip(ip):
+    try:
+        process = await asyncio.create_subprocess_exec(
+            'ping', '-c', '1', ip,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE
+        )
+        stdout, stderr = await process.communicate()
+        return process.returncode == 0
+    except Exception as e:
+        logging.error(f"Error pinging IP {ip}: {e}")
+        return False
+
+async def resolve_hostname(ip):
+    loop = asyncio.get_event_loop()
+    try:
+        result = await loop.run_in_executor(None, socket.gethostbyaddr, ip)
+        hostname = result[0]  # Extract the hostname from the tuple
+        logging.info(f"Resolved hostname for IP {ip}: {hostname}")
+        return hostname
+    except socket.herror as e:
+        logging.warning(f"Failed to resolve hostname for IP {ip}: {e}")
+        return None
+    
+async def detect_hosts(subnet_id=None):
+    logging.info("Starting host detection")
+
+    conn = db.get_db_connection()
+    cursor = conn.cursor(dictionary=True)
+
+    if subnet_id:
+        logging.info(f"Detecting hosts in subnet with ID: {subnet_id}")
+        cursor.execute('SELECT * FROM SUBNETS WHERE id = %s', (subnet_id,))
+    else:
+        logging.info("Detecting hosts in all subnets")
+        cursor.execute('SELECT * FROM SUBNETS')
+
+    subnets = cursor.fetchall()
+    cursor.close()
+    conn.close()
+
+    logging.info(f"Found {len(subnets)} subnets to scan")
+
+    tasks = []
+    for subnet in subnets:
+        # Use the 'range' field to generate the IP range
+        ip_range = generate_ip_range(subnet['range'])
+        subnet_id = subnet['id']
+
+        for ip in ip_range:
+            tasks.append(scan_and_insert_ip(ip, subnet_id))
+
+    await asyncio.gather(*tasks)
+
+    logging.info("Host detection completed")
+
+async def scan_and_resolve(ip, subnet_id):
+    is_online = await ping_ip(ip)
+    hostname = await resolve_hostname(ip) if is_online else None
 
     conn = db.get_db_connection()
     cursor = conn.cursor()
@@ -93,56 +157,9 @@ def scan_and_resolve(ip, subnet_id):
     cursor.close()
     conn.close()
 
-
-def ping_ip(ip):
-    try:
-        result = subprocess.run(['ping', '-c', '1', ip], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        return result.returncode == 0
-    except Exception as e:
-        logging.error(f"Error pinging IP {ip}: {e}")
-        return False
-
-def resolve_hostname(ip):
-    try:
-        hostname, _, _ = socket.gethostbyaddr(ip)
-        logging.info(f"Resolved hostname for IP {ip}: {hostname}")
-        return hostname
-    except socket.herror as e:
-        logging.warning(f"Failed to resolve hostname for IP {ip}: {e}")
-        return None
-
-def detect_hosts(subnet_id=None):
-    logging.info("Starting host detection")
-
-    conn = db.get_db_connection()
-    cursor = conn.cursor(dictionary=True)
-
-    if subnet_id:
-        logging.info(f"Detecting hosts in subnet with ID: {subnet_id}")
-        cursor.execute('SELECT * FROM SUBNETS WHERE id = %s', (subnet_id,))
-    else:
-        logging.info("Detecting hosts in all subnets")
-        cursor.execute('SELECT * FROM SUBNETS')
-
-    subnets = cursor.fetchall()
-    cursor.close()
-    conn.close()
-
-    logging.info(f"Found {len(subnets)} subnets to scan")
-
-    for subnet in subnets:
-        # Use the 'range' field to generate the IP range
-        ip_range = generate_ip_range(subnet['range'])
-        subnet_id = subnet['id']
-
-        for ip in ip_range:
-            scan_and_insert_ip(ip, subnet_id)
-
-    logging.info("Host detection completed")
-
-def scan_and_insert_ip(ip, subnet_id):
-    is_online = ping_ip(ip)
-    hostname = resolve_hostname(ip) if is_online else None
+async def scan_and_insert_ip(ip, subnet_id):
+    is_online = await ping_ip(ip)
+    hostname = await resolve_hostname(ip) if is_online else None
 
     conn = db.get_db_connection()
     cursor = conn.cursor()
@@ -178,7 +195,7 @@ def scan_and_insert_ip(ip, subnet_id):
                 (hostname if hostname else None, datetime.datetime.now(), 1, bool(hostname), ip, subnet_id)
             )
             conn.commit()
-            logging.info(f"Updated IP {ip} with hostname {hostname} in subnet {subnet_id}")
+
     else:
         logging.info(f"IP {ip} is not online")
         # Optionally, you can insert/update offline IPs here if needed
@@ -204,27 +221,19 @@ def generate_ip_range(cidr):
 def get_ips_for_subnet(subnet_id):
     conn = db.get_db_connection()
     cursor = conn.cursor(dictionary=True)
-    
-    # Fetch the subnet details only once
+
+    cursor.execute('SELECT * FROM IPs WHERE subnet_id = %s', (subnet_id,))
+    ips = cursor.fetchall()
+
     cursor.execute('SELECT * FROM SUBNETS WHERE id = %s', (subnet_id,))
     subnet = cursor.fetchone()
-    
-    # Fetch IPs and corresponding switch details in a single query
-    cursor.execute("""
-        SELECT IPs.*, SWITCHES.hostname AS switch_hostname, SWITCHES.ip_address AS switch_ip
-        FROM IPs
-        LEFT JOIN SWITCHES ON IPs.switch_id = SWITCHES.id
-        WHERE IPs.subnet_id = %s
-    """, (subnet_id,))
-    
-    ips = cursor.fetchall()
-    
-    # Cast 'status' to integer for each IP
-    for ip in ips:
-        ip['status'] = int(ip['status']) if ip['status'] is not None else -1
-    
+
+    cursor.close()
     conn.close()
-    
+
+    for ip in ips:
+        ip['status'] = int(ip['status']) if ip['status'] and ip['status'].isdigit() else -1
+
     return subnet, ips
 
 
