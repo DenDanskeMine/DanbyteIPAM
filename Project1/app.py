@@ -1,12 +1,12 @@
-from flask import Flask, render_template, redirect, url_for, flash, request, session, jsonify
+from flask import flask, render_template, redirect, url_for, flash, request, session, jsonify
 from get_favorite_switch import get_favorite_switch
 from snmp_switch import snmp_switch, refresh_snmp_data_for_switch
-from switch_data import get_switch_data
+from switch_data import get_switch_data, add_new_switch
 from group_interfaces import group_interfaces_by_stack
 import db
 import logging
 from subnets import get_all_subnets, get_subnet, update_subnet
-from ips import get_ips_for_subnet, get_ip, add_ip_to_subnet, update_ip, get_ips_for_availability, scan_and_insert_ip, detect_hosts, scan_ips
+from ips import get_ips_for_subnet, get_ip, add_ip_to_subnet, update_ip, get_ips_for_availability, scan_and_insert_ip, detect_hosts, scan_ips, get_switch_by_hostname, delete_switch_by_id, get_switch_by_id
 from ipaddress import ip_network, IPv4Address  
 from get_favorite_subnets import get_favorite_subnets
 from get_favorite_ips import get_favorite_ips
@@ -506,6 +506,111 @@ def delete_ip(ip_id):
         cursor.close()
         conn.close()
     return redirect(url_for('show_subnet_ips', subnet_id=request.form['subnet_id']))
+
+@app.route('/edit_switch/<int:switch_id>', methods=['POST'])
+def edit_switch(switch_id):
+    if request.method == 'POST':
+        data = request.form.to_dict()
+
+        # Convert checkbox values to integers (0 or 1)
+        data['is_online'] = 1 if 'is_online' in data else 0
+        data['is_favorite'] = 1 if 'is_favorite' in data else 0
+
+        # Handle optional fields and validation
+        required_fields = ['hostname', 'ip_address']
+        for field in required_fields:
+            if not data.get(field) or data[field].strip() == '':
+                flash(f"Error: {field.replace('_', ' ').capitalize()} is required.", 'error')
+                return redirect(url_for('show_switch', switch_id=switch_id))
+
+        # Debugging output
+        logging.info(f"Updating switch with data: {data}")
+
+        try:
+            # Update switch and redirect
+            update_switch(switch_id, **data)
+            flash('Switch updated successfully!', 'success')
+            return redirect(url_for('show_switch', switch_id=switch_id))
+        except Exception as e:
+            logging.error(f"Error updating switch: {e}")
+            flash(f"Error updating switch: {e}", 'error')
+            return redirect(url_for('show_switch', switch_id=switch_id))
+
+    # Fetch the current switch
+    current_switch = get_switch(switch_id)
+
+    return render_template(
+        'edit-switch.html',
+        switch=current_switch
+    )
+
+@app.route('/add_switch', methods=['POST'])
+def add_switch():
+    if request.method == 'POST':
+        data = request.form.to_dict()
+
+        # Convert checkbox values to integers (0 or 1)
+        data['is_online'] = 1 if 'is_online' in data else 0
+        data['is_favorite'] = 1 if 'is_favorite' in data else 0
+
+        # Handle optional fields and validation
+        required_fields = ['hostname', 'ip_address']
+        for field in required_fields:
+            if not data.get(field) or data[field].strip() == '':
+                flash(f"Error: {field.replace('_', ' ').capitalize()} is required.", 'error')
+                return redirect(url_for('show_switches'))
+
+        logging.info(f"Adding switch with data: {data}")
+
+        try:
+            # Add switch and redirect
+            add_new_switch(**data)
+            flash('Switch added successfully!', 'success')
+            return redirect(url_for('show_switches'))
+        except Exception as e:
+            logging.error(f"Error adding switch: {e}")
+            flash(f"Error adding switch: {e}", 'error')
+            return redirect(url_for('show_switches'))
+
+    return render_template('switches.html')
+
+@app.route('/check_hostname', methods=['POST'])
+def check_hostname():
+    hostname = request.form.get('hostname')
+
+    if hostname:
+        # Use the function to check if the hostname exists
+        existing_switch = get_switch_by_hostname(hostname)
+        if existing_switch:
+            # Return a JSON response indicating the hostname is taken
+            return jsonify({'status': 'taken', 'message': 'Hostname already exists'})
+        else:
+            # Return a JSON response indicating the hostname is available
+            return jsonify({'status': 'available', 'message': 'Hostname is available'})
+    else:
+        # Handle the case where the hostname is empty
+        return jsonify({'status': 'error', 'message': 'Hostname cannot be empty'})
+
+@app.route('/delete_switch/<int:switch_id>', methods=['POST'])
+def delete_switch(switch_id):
+    # Fetch the switch using the ID
+    switch = get_switch_by_id(switch_id)
+    
+    if not switch:
+        flash('Switch not found', 'error')
+        return redirect(url_for('switch_list'))
+
+    try:
+        # Perform deletion from the database
+        delete_switch_by_id(switch_id)  # Assuming you have this function to delete the switch
+        flash(f'Switch {switch[1]} deleted successfully.', 'success')  # Assuming the hostname is the second element in the switch tuple
+    except Exception as e:
+        flash(f'Error deleting switch: {e}', 'error')
+
+    return redirect(url_for('switch_list'))
+
+
+
 
 if __name__ == '__main__':
     app.run(debug=True)
