@@ -1,4 +1,4 @@
-from flask import Flask, render_template, redirect, url_for, flash, request, session
+from flask import Flask, render_template, redirect, url_for, flash, request, session, jsonify
 from get_favorite_switch import get_favorite_switch
 from snmp_switch import snmp_switch, refresh_snmp_data_for_switch
 from switch_data import get_switch_data
@@ -364,12 +364,48 @@ def edit_ip(ip_id):
         available_ips.append(current_ip['address'])
 
     all_switches = get_all_switches()
+
+    # Fetch the latest interface names for the selected switch
+    conn = db.get_db_connection()
+    cursor = conn.cursor(dictionary=True)
+    cursor.execute("""
+        SELECT int_names 
+        FROM SNMP_DATA_SWITCH 
+        WHERE switch_id = %s 
+        ORDER BY timestamp DESC 
+        LIMIT 1
+    """, (current_ip['switch_id'],))
+    switch_data = cursor.fetchone()
+    cursor.close()
+    conn.close()
+
+    interface_names = switch_data['int_names'].split(',') if switch_data else []
+
     return render_template(
         'edit-ip.html',
         ip=current_ip,
         available_ips=available_ips,
-        switches=all_switches
+        switches=all_switches,
+        interface_names=interface_names
     )
+
+@app.route('/get_interfaces/<int:switch_id>')
+def get_interfaces(switch_id):
+    conn = db.get_db_connection()
+    cursor = conn.cursor(dictionary=True)
+    cursor.execute("""
+        SELECT int_names 
+        FROM SNMP_DATA_SWITCH 
+        WHERE switch_id = %s 
+        ORDER BY timestamp DESC 
+        LIMIT 1
+    """, (switch_id,))
+    switch_data = cursor.fetchone()
+    cursor.close()
+    conn.close()
+
+    interface_names = switch_data['int_names'].split(',') if switch_data else []
+    return jsonify(interface_names)
 
 @app.route('/edit-subnet/<int:subnet_id>', methods=['GET', 'POST'])
 @login_required
@@ -454,6 +490,22 @@ def show_switches():
 
     return render_template('switches.html', switches=switches)
 
+@app.route('/delete_ip/<int:ip_id>', methods=['POST'])
+def delete_ip(ip_id):
+    conn = db.get_db_connection()
+    cursor = conn.cursor()
+    try:
+        cursor.execute('DELETE FROM IPs WHERE id = %s', (ip_id,))
+        conn.commit()
+        flash('IP deleted successfully!', 'success')
+    except Exception as e:
+        logging.error(f"Error deleting IP ID {ip_id}: {e}")
+        conn.rollback()
+        flash('Error deleting IP.', 'danger')
+    finally:
+        cursor.close()
+        conn.close()
+    return redirect(url_for('show_subnet_ips', subnet_id=request.form['subnet_id']))
 
 if __name__ == '__main__':
     app.run(debug=True)

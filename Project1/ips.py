@@ -222,17 +222,20 @@ def get_ips_for_subnet(subnet_id):
     conn = db.get_db_connection()
     cursor = conn.cursor(dictionary=True)
 
-    cursor.execute('SELECT * FROM IPs WHERE subnet_id = %s', (subnet_id,))
-    ips = cursor.fetchall()
-
-    cursor.execute('SELECT * FROM SUBNETS WHERE id = %s', (subnet_id,))
+    # Fetch subnet information
+    cursor.execute("SELECT * FROM SUBNETS WHERE id = %s", (subnet_id,))
     subnet = cursor.fetchone()
 
-    cursor.close()
+    # Fetch IPs information along with switch hostname
+    cursor.execute("""
+        SELECT IPs.*, SWITCHES.hostname AS switch_hostname
+        FROM IPs
+        LEFT JOIN SWITCHES ON IPs.switch_id = SWITCHES.id
+        WHERE IPs.subnet_id = %s
+    """, (subnet_id,))
+    
+    ips = cursor.fetchall()
     conn.close()
-
-    for ip in ips:
-        ip['status'] = int(ip['status']) if ip['status'] and ip['status'].isdigit() else -1
 
     return subnet, ips
 
