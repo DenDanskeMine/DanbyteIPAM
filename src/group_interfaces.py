@@ -33,6 +33,7 @@ def group_interfaces_by_stack(interfaces):
             # Case 3: Interface has only one part like x
             elif len(numbers) == 1:
                 iface = numbers[0]
+                stack = 'default'  # Assign a default stack value
                 key = f"{interface_type} {iface}"
             else:
                 logging.debug(f"Interface name '{name}' did not match expected patterns.")
