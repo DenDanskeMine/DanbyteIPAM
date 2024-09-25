@@ -1,7 +1,6 @@
 import mysql.connector
-import db
+import src.db as db
 import logging
-from db import get_db_connection
 
 # Configure logging
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')

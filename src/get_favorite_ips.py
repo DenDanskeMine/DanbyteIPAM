@@ -1,4 +1,4 @@
-import db
+import src.db as db
 
 def get_favorite_ips():
     conn = db.get_db_connection()

@@ -228,14 +228,21 @@
         </button>
     </div>
     <div class="mb-4">
-        <input type="text" id="searchInput" placeholder="Search switches..." class="w-full p-2 border border-gray-300 rounded-lg">
+        <form method="GET" action="{{ url_for('show_switches') }}">
+            <input type="text" name="search" id="searchInput" value="{{ search_query }}" placeholder="Search switches..." class="w-full p-2 border border-gray-300 rounded-lg">
+            <!-- Preserve the current page when searching -->
+            <input type="hidden" name="page" value="1">
+        </form>
     </div>
     <div id="switchContainer" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 xl:grid-cols-auto gap-3">
+        <!-- Add Switch Button Card -->
         <div class="switch-card m-2 w-full flex-auto p-3 text-gray-500 bg-white rounded-lg shadow dark:bg-gray-800 dark:text-gray-400 flex justify-center items-center" role="alert">
             <button id="addSwitchButton" data-modal-target="addSwitchModal" data-modal-toggle="addSwitchModal" class="w-full h-full flex items-center justify-center text-center text-white bg-blue-900 hover:bg-gray-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg dark:bg-gray-500 dark:hover:dark:bg-gray-600 dark:focus:ring-blue-800" type="button">
                 <i class="fa-solid fa-plus text-2xl"></i>
             </button>
         </div>
+        
+        <!-- Switch Cards -->
         {% for switch in switches %}
         <div class="switch-card m-2 w-full flex-auto p-3 text-gray-500 bg-white rounded-lg shadow dark:bg-gray-800 dark:text-gray-400" role="alert">
             <div class="flex relative block">
@@ -276,32 +283,82 @@
                     <span class="sr-only">Delete</span>
                     <svg class="w-3 h-3" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 14 14">
                         <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m1 1 6 6m0 0 6 6M7 7l6-6M7 7l-6 6" />
-                    </svg>
-                </button>
+                    </path>
+                </svg>
+            </button>
             </div>
         </div>
         {% endfor %}
     </div>
+    
+    <!-- Pagination Controls -->
+    <div class="flex justify-center mt-6">
+        <nav aria-label="Page navigation">
+            <ul class="inline-flex -space-x-px">
+                <!-- Previous Button -->
+                {% if page > 1 %}
+                <li>
+                    <a href="{{ url_for('show_switches', page=page-1, search=search_query) }}" class="px-3 py-2 ml-0 leading-tight text-gray-500 bg-white border border-gray-300 rounded-l-lg hover:bg-gray-100 hover:text-gray-700 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-400 dark:hover:bg-gray-600 dark:hover:text-white">
+                        Previous
+                    </a>
+                </li>
+                {% else %}
+                <li>
+                    <span class="px-3 py-2 ml-0 leading-tight text-gray-400 bg-white border border-gray-300 rounded-l-lg cursor-not-allowed">Previous</span>
+                </li>
+                {% endif %}
+                
+                <!-- Page Numbers -->
+                {% for p in range(1, total_pages + 1) %}
+                    {% if p == page %}
+                        <li>
+                            <span class="px-3 py-2 leading-tight text-blue-600 border border-blue-300 bg-blue-50 dark:bg-gray-700 dark:border-gray-600 dark:text-white">{{ p }}</span>
+                        </li>
+                    {% elif p >= page - 2 and p <= page + 2 %}
+                        <li>
+                            <a href="{{ url_for('show_switches', page=p, search=search_query) }}" class="px-3 py-2 leading-tight text-gray-500 bg-white border border-gray-300 hover:bg-gray-100 hover:text-gray-700 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-400 dark:hover:bg-gray-600 dark:hover:text-white">{{ p }}</a>
+                        </li>
+                    {% elif p == 1 or p == total_pages %}
+                        <li>
+                            <a href="{{ url_for('show_switches', page=p, search=search_query) }}" class="px-3 py-2 leading-tight text-gray-500 bg-white border border-gray-300 hover:bg-gray-100 hover:text-gray-700 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-400 dark:hover:bg-gray-600 dark:hover:text-white">{{ p }}</a>
+                        </li>
+                    {% elif p == page - 3 or p == page + 3 %}
+                        <li>
+                            <span class="px-3 py-2 leading-tight text-gray-500 bg-white border border-gray-300 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-400">...</span>
+                        </li>
+                    {% endif %}
+                {% endfor %}
+                
+                <!-- Next Button -->
+                {% if page < total_pages %}
+                <li>
+                    <a href="{{ url_for('show_switches', page=page+1, search=search_query) }}" class="px-3 py-2 leading-tight text-gray-500 bg-white border border-gray-300 rounded-r-lg hover:bg-gray-100 hover:text-gray-700 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-400 dark:hover:bg-gray-600 dark:hover:text-white">
+                        Next
+                    </a>
+                </li>
+                {% else %}
+                <li>
+                    <span class="px-3 py-2 leading-tight text-gray-400 bg-white border border-gray-300 rounded-r-lg cursor-not-allowed">Next</span>
+                </li>
+                {% endif %}
+            </ul>
+        </nav>
+    </div>
 </div>
 
 <script>
-document.getElementById('searchInput').addEventListener('input', function() {
-    const searchTerm = this.value.toLowerCase();
-    const switchCards = document.querySelectorAll('.switch-card');
-
-    switchCards.forEach(card => {
-        const hostname = card.querySelector('.hostname').textContent.toLowerCase();
-        const ipAddress = card.querySelector('.ip-address .font-semibold').textContent.toLowerCase();
-        const location = card.querySelector('.location .font-semibold').textContent.toLowerCase();
-
-        if (hostname.includes(searchTerm) || ipAddress.includes(searchTerm) || location.includes(searchTerm)) {
-            card.style.display = 'block';
-        } else {
-            card.style.display = 'none';
-        }
-    });
+// Handle Search Form Submission
+document.getElementById('searchInput').addEventListener('keyup', function(event) {
+    if (event.key === 'Enter') {
+        this.form.submit();
+    }
 });
+
+// Optional: AJAX-Based Search and Pagination (Advanced)
+// Implementing this would require additional backend routes and JavaScript handling.
+// For simplicity and performance with large datasets, it's recommended to stick with server-side pagination.
 </script>
+
 
 
 

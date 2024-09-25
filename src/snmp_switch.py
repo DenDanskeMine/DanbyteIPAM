@@ -1,6 +1,6 @@
 import logging
 from easysnmp import Session
-import db
+import src.db as db
 import binascii
 
 # Configure logging

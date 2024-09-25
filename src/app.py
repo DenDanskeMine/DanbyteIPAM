@@ -1,23 +1,24 @@
 from flask import Flask, render_template, redirect, url_for, flash, request, session, jsonify
-from get_favorite_switch import get_favorite_switch
-from snmp_switch import snmp_switch, refresh_snmp_data_for_switch
-from switch_data import get_switch_data, add_new_switch
-from group_interfaces import group_interfaces_by_stack
-import db
+from src.get_favorite_switch import get_favorite_switch
+from src.snmp_switch import * 
+from src.switch_data import *
+from src.group_interfaces import *
+import src.db as db
 import logging
-from subnets import get_all_subnets, get_subnet, update_subnet
-from ips import get_ips_for_subnet, get_ip, add_ip_to_subnet, update_ip, get_ips_for_availability, scan_and_insert_ip, detect_hosts, scan_ips, get_switch_by_hostname, delete_switch_by_id, get_switch_by_id
+import src.subnets as subnets
 from ipaddress import ip_network, IPv4Address  
-from get_favorite_subnets import get_favorite_subnets
-from get_favorite_ips import get_favorite_ips
+from src.get_favorite_subnets import *
+from src.get_favorite_ips import *
+from src.ips import *
 from flask_bcrypt import Bcrypt
 from functools import wraps
-from werkzeug.security import generate_password_hash, check_password_hash
+from werkzeug.security import *
 from collections import defaultdict
 import asyncio
 from asgiref.wsgi import WsgiToAsgi
-from subnets import add_new_subnet
-
+from src.subnets import *
+import math
+# Configure logging
 # Configure logging
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
 
@@ -132,6 +133,7 @@ def detect_hosts_route():
     asyncio.run(detect_hosts(subnet_id))
     flash('Host detection completed!', 'success')
     return redirect(url_for('show_subnet_ips', subnet_id=subnet_id) if subnet_id else url_for('index'))
+
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
@@ -159,13 +161,6 @@ def login():
 
     return render_template('login.html')
 
-
-
-
-
-
-
-
 @app.route('/')
 @login_required
 def index():
@@ -181,8 +176,6 @@ def index():
                            count_favorite_subnets=count_favorite_subnets,
                            favorite_ips=favorite_ips, 
                            count_favorite_ips=count_favorite_ips)
-
-
 
 @app.route('/collect_snmp_data', methods=['POST'])
 @login_required
@@ -248,6 +241,7 @@ def show_switch(switch_id):
         logging.error(f"Error showing switch {switch_id}: {e}")
         flash('Error showing switch. Check logs for details.', 'danger')
         return redirect(url_for('index'))
+    
 @app.route('/subnets')
 @login_required
 def show_subnets():
@@ -290,7 +284,6 @@ def show_subnet_ips(subnet_id):
         else:
             status_counts['Unknown'] += 1
 
-
     
     # Add available IPs to the counts
     status_counts['Available'] = available_ips_count
@@ -316,8 +309,6 @@ def show_subnet_ips(subnet_id):
         chart_labels=chart_labels,
         chart_colors_list=chart_colors_list
     )
-
-
 
 @app.route('/edit-ip/<int:ip_id>', methods=['GET', 'POST'])
 @login_required
@@ -482,15 +473,55 @@ def get_switch_details(switch_id):
 @app.route('/switches')
 @login_required
 def show_switches():
-    # Fetch all switches from the database
+    # Pagination parameters
+    page = request.args.get('page', 1, type=int)
+    per_page = 50  # Number of switches per page; adjust as needed
+
+    # Search query
+    search_query = request.args.get('search', '', type=str).strip()
+
+    # Database connection
     conn = db.get_db_connection()
     cursor = conn.cursor(dictionary=True)
-    cursor.execute('SELECT * FROM SWITCHES')  # Query to fetch all switches
+
+    # Base query
+    base_query = "SELECT * FROM SWITCHES"
+    count_query = "SELECT COUNT(*) as count FROM SWITCHES"
+
+    # Parameters for SQL queries
+    params = []
+    if search_query:
+        base_query += " WHERE hostname LIKE %s OR ip_address LIKE %s OR location LIKE %s"
+        count_query += " WHERE hostname LIKE %s OR ip_address LIKE %s OR location LIKE %s"
+        like_query = f"%{search_query}%"
+        params.extend([like_query, like_query, like_query])
+
+    # Execute count query to get total number of switches
+    cursor.execute(count_query, params)
+    total_switches = cursor.fetchone()['count']
+    total_pages = math.ceil(total_switches / per_page) if per_page else 1
+
+    # Calculate offset
+    offset = (page - 1) * per_page
+
+    # Append ORDER BY, LIMIT, OFFSET to base query
+    base_query += " ORDER BY id ASC LIMIT %s OFFSET %s"
+    params.extend([per_page, offset])
+
+    # Execute main query to fetch switches for the current page
+    cursor.execute(base_query, params)
     switches = cursor.fetchall()
+
     cursor.close()
     conn.close()
 
-    return render_template('switches.html', switches=switches)
+    return render_template(
+        'switches.html',
+        switches=switches,
+        page=page,
+        total_pages=total_pages,
+        search_query=search_query
+    )
 
 
 @app.route('/delete_ip/<int:ip_id>', methods=['POST'])
@@ -616,5 +647,6 @@ def delete_switch(switch_id):
 @app.route('/base1')
 def base1():
     return render_template('base1.html')
+
 if __name__ == '__main__':
     app.run(debug=True)

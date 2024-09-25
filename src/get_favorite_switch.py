@@ -1,4 +1,4 @@
-import db  # Assuming your database connection function is in db.py
+import src.db as db  # Assuming your database connection function is in db.py
 
 def get_favorite_switch():
     # Establish the connection to the database
