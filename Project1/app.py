@@ -25,7 +25,7 @@ app = Flask(__name__)
 app.secret_key = 'supersecretkey'
 asgi_app = WsgiToAsgi(app)
 bcrypt = Bcrypt(app)
-available_ips = None
+available_ips = None 
 
 @app.context_processor
 def inject_switches():
