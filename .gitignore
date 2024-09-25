@@ -3,6 +3,6 @@ __pycache__/
 *.sqlite3
 venv/
 .vscode-server/
-Project1/venv/
-Project1/venv
-Project1/node_modules/
+/venv/
+/venv
+/node_modules/
