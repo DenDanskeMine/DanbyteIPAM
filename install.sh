@@ -52,7 +52,7 @@ EOF
 
 # Create MariaDB user and database
 echo -e "${BLUE}Creating MariaDB user and database...${NC}"
-mysql -u root -pCHANGEME <<MYSQL_SCRIPT
+sudo mysql -u root -pCHANGEME <<MYSQL_SCRIPT
 DROP USER IF EXISTS 'danbyte_admin'@'%';
 CREATE DATABASE IF NOT EXISTS DANBYTE;
 CREATE USER 'danbyte_admin'@'%' IDENTIFIED BY 'admin';
