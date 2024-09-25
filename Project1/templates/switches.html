@@ -25,39 +25,47 @@
                 {% endif %}
             {% endfor %}
         {% endif %}
-    {% endwith %}
-
-<!--  SWITCHES LIST-->
-
-<div class="p-4 border-2 border-gray-200 border-dashed rounded-lg dark:border-gray-700">
+      {% endwith %}
+    
+    <!--  SWITCHES LIST-->
+    
     <div class="text-3xl text-gray-400 dark:text-gray-500 mb-4">
-        Available Switches
+        Favorite Switches
     </div>
     <div class="flex justify-end mb-4">
-        <button id="addSwitchButton" data-modal-target="addSwitchModal" data-modal-toggle="addSwitchModal" class="block text-white bg-primary-700 hover:bg-primary-800 focus:ring-4 focus:outline-none focus:ring-primary-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center dark:bg-primary-600 dark:hover:bg-primary-700 dark:focus:ring-primary-800" type="button">
-            Add Switch
-        </button>
+    
     </div>
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {% for switch in switches %}
-        <div class="relative block bg-gray-900 dark:bg-gray-800 p-6 rounded-lg shadow hover:bg-gray-800 dark:hover:bg-gray-700">
-            <a href="{{ url_for('show_switch', switch_id=switch.id) }}" class="absolute inset-0 z-0"></a>
-            <div class="flex items-center space-x-6 relative z-10">
-                <i class="fa-solid fa-network-wired text-blue-500 text-5xl"></i>
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {% for switch in favorite_switches %}
+        <div class="block bg-gradient-to-r from-gray-700 via-gray-800 to-gray-900 p-4 rounded-lg shadow-md hover:bg-gray-600 transition-all duration-200 relative">
+            <div class="flex items-center space-x-4">
+                <!-- Icon for Switch -->
+                <i class="fa-solid fa-right-left text-blue-400 text-4xl"></i>
+    
+                <!-- Switch Information -->
                 <div class="text-left">
-                    <div class="text-2xl font-semibold text-white">{{ switch.hostname }}</div>
-                    <div class="text-lg text-gray-400">{{ switch.ip_address }}</div>
-                    <div class="text-lg text-gray-400">{{ switch.location }}</div>
+                    <div class="text-xl font-medium text-white">{{ switch.hostname }}</div>
+                    <div class="text-sm text-gray-400">{{ switch.location }}</div>
+                    <div class="text-sm text-gray-400">{{ switch.ip_address }}</div>
                 </div>
-                <button onclick="openEditModal({{ switch.id }}, '{{ switch.hostname }}', '{{ switch.ip_address }}', '{{ switch.location }}', '{{ switch.community }}', '{{ switch.model }}', '{{ switch.firmware_version }}', {{ switch.port_count }}, {{ switch.is_online }}, {{ switch.is_favorite }})" class="text-gray-400 hover:text-gray-200 relative z-20">
-                    <i class="fa-solid fa-edit"></i>
-                </button>
             </div>
+    
+            <!-- Buttons with Flexbox, aligning with content -->
+            <div class="flex justify-start space-x-2 mt-3">
+                <a href="{{ url_for('show_switch', switch_id=switch.id) }}" class="inline-flex justify-center px-4 py-2 text-xs font-medium text-center text-white bg-blue-600 rounded-lg hover:bg-blue-700 focus:ring-4 focus:outline-none focus:ring-blue-300 dark:bg-blue-500 dark:hover:bg-blue-600 dark:focus:ring-blue-800">Go to</a>
+                <a href="#" class="inline-flex justify-center px-4 py-2 text-xs font-medium text-center text-gray-900 bg-white border border-gray-300 rounded-lg hover:bg-gray-100 focus:ring-4 focus:outline-none focus:ring-gray-200 dark:bg-gray-600 dark:text-white dark:border-gray-600 dark:hover:bg-gray-700 dark:hover:border-gray-700 dark:focus:ring-gray-700" onclick="openEditModal({{ switch.id }}, '{{ switch.hostname }}', '{{ switch.ip_address }}', '{{ switch.location }}', '{{ switch.community }}', '{{ switch.model }}', '{{ switch.firmware_version }}', {{ switch.port_count }}, {{ switch.is_online }}, {{ switch.is_favorite }})">Edit</a>
+            </div>
+    
+            <!-- Close Button -->
+            <button type="button" onclick="openDeleteModal({{ switch.id }})" class="absolute top-2 right-2 bg-white items-center justify-center flex-shrink-0 text-gray-400 hover:text-red-900 rounded-lg focus:ring-2 focus:ring-gray-300 p-1.5 hover:bg-gray-100 inline-flex h-8 w-8 dark:text-gray-500 dark:hover:text-red-500 dark:bg-gray-800 dark:hover:bg-gray-700" data-dismiss-target="#toast-interactive" aria-label="Close">
+                <span class="sr-only">Delete</span>
+                <svg class="w-3 h-3" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 14 14">
+                    <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m1 1 6 6m0 0 6 6M7 7l6-6M7 7l-6 6" />
+                </svg>
+            </button>
         </div>
         {% endfor %}
     </div>
-</div>
-
 <!-- Main modal -->
 <div id="addSwitchModal" tabindex="-1" aria-hidden="true" class="hidden overflow-y-auto overflow-x-hidden fixed top-0 right-0 left-0 z-50 justify-center items-center w-full md:inset-0 h-modal md:h-full">
     <div class="relative p-4 w-full max-w-3xl h-full md:h-auto"> <!-- Increased width to max-w-3xl -->
@@ -210,65 +218,104 @@
     </div>
 </div>
 
-
-<div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 xl:grid-cols-auto gap-3">
-    {% for switch in switches %}
-    <div class="m-2 w-full flex-auto p-3 text-gray-500 bg-white rounded-lg shadow dark:bg-gray-800 dark:text-gray-400" role="alert">
-        <div class="flex relative block">
-            <!-- Main Icon -->
-            <div class="inline-flex items-center justify-center flex-shrink-0 w-8 h-8 text-blue-500 bg-blue-100 rounded-lg dark:text-blue-300 dark:bg-blue-900">
-                <i class="fa-solid fa-right-left text-blue-500"></i>
-                <span class="sr-only">Refresh icon</span>
-            </div>
-            
-            <!-- Switch Details -->
-            <div class="ms-3 text-sm font-normal">
-                <!-- Hostname -->
-                <span class="mb-1 text-sm font-semibold text-gray-900 dark:text-white">{{ switch.hostname }}</span>
-
-                <!-- IP Address and Location with icons -->
-                <div class="text-sm font-light text-gray-700 dark:text-gray-300 mt-0.5">
-                    <!-- IP Address with Icon -->
-                    <div class="flex items-center mt-1">
-                        <i class="fa-solid fa-network-wired mr-2 text-gray-500 dark:text-gray-300"></i>
-                        <span class="font-semibold">{{ switch.ip_address }}</span>
-                    </div>
-                    <!-- Location with Icon -->
-                    <div class="flex items-center mt-1">
-                        <i class="fa-solid fa-location-dot mr-2 text-gray-500 dark:text-gray-300"></i>
-                        <span class="font-semibold">{{ switch.location }}</span>
-                    </div>
-                </div>
-
-                <!-- Buttons with Flexbox, aligning with content -->
-                <div class="flex justify-start space-x-2 mt-3">
-                    <a href="{{ url_for('show_switch', switch_id=switch.id) }}" class="inline-flex justify-center px-4 py-2 text-xs font-medium text-center text-white bg-blue-600 rounded-lg hover:bg-blue-700 focus:ring-4 focus:outline-none focus:ring-blue-300 dark:bg-blue-500 dark:hover:bg-blue-600 dark:focus:ring-blue-800">Go to</a>
-                    <a href="#" class="inline-flex justify-center px-4 py-2 text-xs font-medium text-center text-gray-900 bg-white border border-gray-300 rounded-lg hover:bg-gray-100 focus:ring-4 focus:outline-none focus:ring-gray-200 dark:bg-gray-600 dark:text-white dark:border-gray-600 dark:hover:bg-gray-700 dark:hover:border-gray-700 dark:focus:ring-gray-700" onclick="openEditModal({{ switch.id }}, '{{ switch.hostname }}', '{{ switch.ip_address }}', '{{ switch.location }}', '{{ switch.community }}', '{{ switch.model }}', '{{ switch.firmware_version }}', {{ switch.port_count }}, {{ switch.is_online }}, {{ switch.is_favorite }})">Edit</a>
-                </div>
-            </div>
-
-            <!-- Close Button -->
-            <button type="button" onclick="openDeleteModal({{ switch.id }})" class="ms-auto -mx-1.5 -my-1.5 bg-white items-center justify-center flex-shrink-0 text-gray-400 hover:text-red-900 rounded-lg focus:ring-2 focus:ring-gray-300 p-1.5 hover:bg-gray-100 inline-flex h-8 w-8 dark:text-gray-500 dark:hover:text-red-500 dark:bg-gray-800 dark:hover:bg-gray-700" data-dismiss-target="#toast-interactive" aria-label="Close">
-                <span class="sr-only">Delete</span>
-                <svg class="w-3 h-3" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 14 14">
-                    <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m1 1 6 6m0 0 6 6M7 7l6-6M7 7l-6 6" />
-                </svg>
+<div class="p-4 border-2 border-gray-200 border-dashed rounded-lg dark:border-gray-700">
+    <div class="text-3xl text-gray-400 dark:text-gray-500 mb-4">
+        Available Switches
+    </div>
+    <div class="flex justify-end mb-4">
+        <button id="addSwitchButton" data-modal-target="addSwitchModal" data-modal-toggle="addSwitchModal" class="block text-white bg-primary-700 hover:bg-primary-800 focus:ring-4 focus:outline-none focus:ring-primary-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center dark:bg-primary-600 dark:hover:bg-primary-700 dark:focus:ring-primary-800" type="button">
+            Add Switch
+        </button>
+    </div>
+    <div class="mb-4">
+        <input type="text" id="searchInput" placeholder="Search switches..." class="w-full p-2 border border-gray-300 rounded-lg">
+    </div>
+    <div id="switchContainer" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 xl:grid-cols-auto gap-3">
+        <div class="switch-card m-2 w-full flex-auto p-3 text-gray-500 bg-white rounded-lg shadow dark:bg-gray-800 dark:text-gray-400 flex justify-center items-center" role="alert">
+            <button id="addSwitchButton" data-modal-target="addSwitchModal" data-modal-toggle="addSwitchModal" class="w-full h-full flex items-center justify-center text-center text-white bg-blue-900 hover:bg-gray-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg dark:bg-gray-500 dark:hover:dark:bg-gray-600 dark:focus:ring-blue-800" type="button">
+                <i class="fa-solid fa-plus text-2xl"></i>
             </button>
         </div>
+        {% for switch in switches %}
+        <div class="switch-card m-2 w-full flex-auto p-3 text-gray-500 bg-white rounded-lg shadow dark:bg-gray-800 dark:text-gray-400" role="alert">
+            <div class="flex relative block">
+                <!-- Main Icon -->
+                <div class="inline-flex items-center justify-center flex-shrink-0 w-8 h-8 text-blue-500 bg-blue-100 rounded-lg dark:text-blue-300 dark:bg-blue-900">
+                    <i class="fa-solid fa-right-left text-blue-500"></i>
+                    <span class="sr-only">Refresh icon</span>
+                </div>
+                
+                <!-- Switch Details -->
+                <div class="ms-3 text-sm font-normal">
+                    <!-- Hostname -->
+                    <span class="hostname mb-1 text-sm font-semibold text-gray-900 dark:text-white">{{ switch.hostname }}</span>
+
+                    <!-- IP Address and Location with icons -->
+                    <div class="text-sm font-light text-gray-700 dark:text-gray-300 mt-0.5">
+                        <!-- IP Address with Icon -->
+                        <div class="ip-address flex items-center mt-1">
+                            <i class="fa-solid fa-network-wired mr-2 text-gray-500 dark:text-gray-300"></i>
+                            <span class="font-semibold">{{ switch.ip_address }}</span>
+                        </div>
+                        <!-- Location with Icon -->
+                        <div class="location flex items-center mt-1">
+                            <i class="fa-solid fa-location-dot mr-2 text-gray-500 dark:text-gray-300"></i>
+                            <span class="font-semibold">{{ switch.location }}</span>
+                        </div>
+                    </div>
+
+                    <!-- Buttons with Flexbox, aligning with content -->
+                    <div class="flex justify-start space-x-2 mt-3">
+                        <a href="{{ url_for('show_switch', switch_id=switch.id) }}" class="inline-flex justify-center px-4 py-2 text-xs font-medium text-center text-white bg-blue-600 rounded-lg hover:bg-blue-700 focus:ring-4 focus:outline-none focus:ring-blue-300 dark:bg-blue-500 dark:hover:bg-blue-600 dark:focus:ring-blue-800">Go to</a>
+                        <a href="#" class="inline-flex justify-center px-4 py-2 text-xs font-medium text-center text-gray-900 bg-white border border-gray-300 rounded-lg hover:bg-gray-100 focus:ring-4 focus:outline-none focus:ring-gray-200 dark:bg-gray-600 dark:text-white dark:border-gray-600 dark:hover:bg-gray-700 dark:hover:border-gray-700 dark:focus:ring-gray-700" onclick="openEditModal({{ switch.id }}, '{{ switch.hostname }}', '{{ switch.ip_address }}', '{{ switch.location }}', '{{ switch.community }}', '{{ switch.model }}', '{{ switch.firmware_version }}', {{ switch.port_count }}, {{ switch.is_online }}, {{ switch.is_favorite }})">Edit</a>
+                    </div>
+                </div>
+
+                <!-- Close Button -->
+                <button type="button" onclick="openDeleteModal({{ switch.id }})" class="ms-auto -mx-1.5 -my-1.5 bg-white items-center justify-center flex-shrink-0 text-gray-400 hover:text-red-900 rounded-lg focus:ring-2 focus:ring-gray-300 p-1.5 hover:bg-gray-100 inline-flex h-8 w-8 dark:text-gray-500 dark:hover:text-red-500 dark:bg-gray-800 dark:hover:bg-gray-700" data-dismiss-target="#toast-interactive" aria-label="Close">
+                    <span class="sr-only">Delete</span>
+                    <svg class="w-3 h-3" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 14 14">
+                        <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m1 1 6 6m0 0 6 6M7 7l6-6M7 7l-6 6" />
+                    </svg>
+                </button>
+            </div>
+        </div>
+        {% endfor %}
     </div>
-    {% endfor %}
 </div>
+
+<script>
+document.getElementById('searchInput').addEventListener('input', function() {
+    const searchTerm = this.value.toLowerCase();
+    const switchCards = document.querySelectorAll('.switch-card');
+
+    switchCards.forEach(card => {
+        const hostname = card.querySelector('.hostname').textContent.toLowerCase();
+        const ipAddress = card.querySelector('.ip-address .font-semibold').textContent.toLowerCase();
+        const location = card.querySelector('.location .font-semibold').textContent.toLowerCase();
+
+        if (hostname.includes(searchTerm) || ipAddress.includes(searchTerm) || location.includes(searchTerm)) {
+            card.style.display = 'block';
+        } else {
+            card.style.display = 'none';
+        }
+    });
+});
+</script>
+
 
 
 <!-- DELETE modal -->
-<div id="deleteModal" tabindex="-1" aria-hidden="true" class="hidden overflow-y-auto overflow-x-hidden fixed top-0 right-0 left-0 z-50 justify-center items-center w-full md:inset-0 h-modal md:h-full">
-    <div class="relative p-4 w-full max-w-md h-full md:h-auto">
+<div id="deleteModal" tabindex="-1" aria-hidden="true" class="hidden fixed inset-0 z-50 flex items-center justify-center overflow-y-auto overflow-x-hidden w-full h-full bg-gray-900 bg-opacity-50">
+    <div class="relative p-4 w-full max-w-md h-auto">
         <!-- Modal content -->
         <div class="relative p-4 text-center bg-white rounded-lg shadow dark:bg-gray-800 sm:p-5">
-            <svg class="text-gray-400 dark:text-gray-500 w-11 h-11 mb-3.5 mx-auto" aria-hidden="true" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 012 0v6a1 1 11-2 0V8zm5-1a1 1 00-1 1v6a1 1 102 0V8a1 1 00-1-1z" clip-rule="evenodd"></path></svg>
+            <svg class="text-gray-400 dark:text-gray-500 w-11 h-11 mb-3.5 mx-auto" aria-hidden="true" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+                <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 012 0v6a1 1 11-2 0V8zm5-1a1 1 00-1 1v6a1 1 102 0V8a1 1 00-1-1z" clip-rule="evenodd"></path>
+            </svg>
             <p class="mb-4 text-gray-500 dark:text-gray-300">Are you sure you want to delete this switch?</p>
             <div class="flex justify-center items-center space-x-4">
-                <button data-modal-toggle="deleteModal" type="button" class="py-2 px-3 text-sm font-medium text-gray-500 bg-white rounded-lg border border-gray-200 hover:bg-gray-100 focus:ring-4 focus:outline-none focus:ring-primary-300 hover:text-gray-900 focus:z-10 dark:bg-gray-700 dark:text-gray-300 dark:border-gray-500 dark:hover:text-white dark:hover:bg-gray-600 dark:focus:ring-gray-600">
+                <button id="cancelDeleteButton" type="button" class="py-2 px-3 text-sm font-medium text-gray-500 bg-white rounded-lg border border-gray-200 hover:bg-gray-100 focus:ring-4 focus:outline-none focus:ring-primary-300 hover:text-gray-900 focus:z-10 dark:bg-gray-700 dark:text-gray-300 dark:border-gray-500 dark:hover:text-white dark:hover:bg-gray-600 dark:focus:ring-gray-600">
                     No, cancel
                 </button>
                 <form id="deleteForm" action="" method="post">
@@ -284,8 +331,8 @@
 
 
 
-<script>
 
+<script>
 function openDeleteModal(switchId) {
     document.getElementById('deleteModal').classList.remove('hidden');
     const deleteForm = document.getElementById('deleteForm');
@@ -293,42 +340,10 @@ function openDeleteModal(switchId) {
     deleteForm.querySelector('input[name="switch_id"]').value = switchId;
 }
 
-
-
-  $(document).ready(function () {
-    // Listen for changes in the hostname input field
-    $('#hostname').on('input', function () {
-        const hostname = $(this).val();
-
-        // Make an AJAX request to check if the hostname is available
-        $.ajax({
-            type: 'POST',
-            url: '/check_hostname',
-            data: { hostname: hostname },
-            dataType: 'json',
-            success: function (response) {
-                console.log(response); // Debugging response from the server
-                const feedback = $('#hostname-feedback');
-                if (response.status === 'taken') {
-                    $('#hostname').removeClass('border-green-500').addClass('border-red-500 bg-red-50');
-                    feedback.removeClass('text-green-600').addClass('text-red-600').html(`<span class="font-medium">Oops!</span> ${response.message}`);
-                } else if (response.status === 'available') {
-                    $('#hostname').removeClass('border-red-500 bg-red-50').addClass('border-green-500 bg-green-50');
-                    feedback.removeClass('text-red-600').addClass('text-green-600').html(`<span class="font-medium">Alright!</span> ${response.message}`);
-                } else {
-                    $('#hostname').removeClass('border-green-500 border-red-500 bg-red-50 bg-green-50');
-                    feedback.removeClass('text-green-600 text-red-600').html('');
-                }
-            },
-            error: function (xhr, status, error) {
-                console.error('Error during AJAX request:', error);
-            }
-        });
-    });
+document.getElementById('cancelDeleteButton').addEventListener('click', function () {
+    document.getElementById('deleteModal').classList.add('hidden');
 });
-
 </script>
-
 
 
 

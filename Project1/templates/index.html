@@ -80,13 +80,13 @@
                     <div class="flex items-center space-x-4">
                         <!-- Conditional Icon for IP based on status -->
                         {% if ip.status == '1' %}
-                        <i class="fa-solid fa-network-wired text-green-400 text-4xl"></i>
+                        <i class="fa-solid fa-ethernet text-green-400 text-4xl"></i>
                         {% elif ip.status == '0' %}
-                        <i class="fa-solid fa-network-wired text-red-400 text-4xl"></i>
+                        <i class="fa-solid fa-ethernet text-red-400 text-4xl"></i>
                         {% elif ip.status == '3' %}
-                        <i class="fa-solid fa-network-wired text-yellow-400 text-4xl"></i>
+                        <i class="fa-solid fa-ethernet text-yellow-400 text-4xl"></i>
                         {% else %}
-                        <i class="fa-solid fa-network-wired text-gray-400 text-4xl"></i>
+                        <i class="fa-solid fa-ethernet text-gray-400 text-4xl"></i>
                         {% endif %}
 
                         <!-- IP Information -->

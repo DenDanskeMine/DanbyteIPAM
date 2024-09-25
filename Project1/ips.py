@@ -330,14 +330,13 @@ def delete_switch_by_id(switch_id):
 
 def get_switch_by_id(switch_id):
     conn = db.get_db_connection()
-    cursor = conn.cursor()
-    try:
-        cursor.execute('SELECT * FROM SWITCHES WHERE id = %s', (switch_id,))
-        switch = cursor.fetchone()  # Assuming you're using a fetch method that fits your cursor configuration
-        return switch
-    finally:
-        cursor.close()
-        conn.close()
+    cursor = conn.cursor(dictionary=True)
+    cursor.execute('SELECT * FROM SWITCHES WHERE id = %s', (switch_id,))
+    switch = cursor.fetchone()
+    cursor.close()
+    conn.close()
+    return switch
+
 
 
 def update_ip(ip_id, **kwargs):

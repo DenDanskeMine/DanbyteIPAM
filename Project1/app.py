@@ -1,4 +1,4 @@
-from flask import flask, render_template, redirect, url_for, flash, request, session, jsonify
+from flask import Flask, render_template, redirect, url_for, flash, request, session, jsonify
 from get_favorite_switch import get_favorite_switch
 from snmp_switch import snmp_switch, refresh_snmp_data_for_switch
 from switch_data import get_switch_data, add_new_switch
@@ -36,8 +36,9 @@ def inject_switches():
     offline_count = cursor.fetchone()['count']
     cursor.close()
     conn.close()
+    favorite_switches, count_favorite_switches = get_favorite_switch()
     num_switches = {'online': online_count, 'offline': offline_count}
-    return dict(num_switches=num_switches)
+    return dict(num_switches=num_switches, favorite_switches=favorite_switches, count_favorite_switches=count_favorite_switches)
 
 def hash_password(plain_password):
     return bcrypt.generate_password_hash(plain_password).decode('utf-8')
@@ -490,6 +491,7 @@ def show_switches():
 
     return render_template('switches.html', switches=switches)
 
+
 @app.route('/delete_ip/<int:ip_id>', methods=['POST'])
 def delete_ip(ip_id):
     conn = db.get_db_connection()
@@ -591,26 +593,27 @@ def check_hostname():
         # Handle the case where the hostname is empty
         return jsonify({'status': 'error', 'message': 'Hostname cannot be empty'})
 
+
 @app.route('/delete_switch/<int:switch_id>', methods=['POST'])
 def delete_switch(switch_id):
     # Fetch the switch using the ID
-    switch = get_switch_by_id(switch_id)
-    
+    switch = get_switch_by_id(switch_id)  # Make sure you have this helper function
+
     if not switch:
         flash('Switch not found', 'error')
-        return redirect(url_for('switch_list'))
+        return redirect(url_for('show_switches'))
 
     try:
         # Perform deletion from the database
-        delete_switch_by_id(switch_id)  # Assuming you have this function to delete the switch
-        flash(f'Switch {switch[1]} deleted successfully.', 'success')  # Assuming the hostname is the second element in the switch tuple
+        delete_switch_by_id(switch_id)
+        flash(f'Switch {switch["hostname"]} deleted successfully.', 'success')
     except Exception as e:
         flash(f'Error deleting switch: {e}', 'error')
 
-    return redirect(url_for('switch_list'))
+    return redirect(url_for('show_switches'))
 
-
-
-
+@app.route('/base1')
+def base1():
+    return render_template('base1.html')
 if __name__ == '__main__':
     app.run(debug=True)

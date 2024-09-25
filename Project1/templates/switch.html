@@ -6,11 +6,10 @@
     <div class="container mx-auto px-4">
         <h1 class="text-2xl font-semibold">Info</h1> <!-- Using switch.hostname -->
         <p class="text-sm">Details and interfaces for this switch are shown below.</p>
-        <p class="text-sm">Click on an interface to view more details.</p>
+        <p class="text-sm">Hover over an interface to view more details.</p>
     </div>
 </div>
 
-<!-- Switch Information -->
 <!-- Switch Information -->
 <div class="block bg-gray-900 dark:bg-gray-800 p-6 rounded-lg shadow hover:bg-gray-800 dark:hover:bg-gray-700">
     <div class="flex items-center space-x-6">
@@ -26,7 +25,6 @@
     </div>
 </div>
 
-
 <!-- Display stack groups -->
 <div class="flex flex-col gap-y-4 mt-4">
     {% for stack, groups in stack_groups.items() %}
@@ -34,33 +32,58 @@
             <h4 class="text-lg font-semibold text-white">{{ stack }}</h4>
             <div class="flex space-x-1 mb-1">
                 {% for interface in groups.odd %}
-                    <div class="status-box 
-                        {% if interface.shutdown == '2' %} bg-gray-500 
-                        {% elif interface.status == '1' %} bg-green-500 
-                        {% elif interface.status == '2' %} bg-red-500 
-                        {% else %} bg-gray-500 {% endif %} 
-                        text-white font-bold rounded flex items-center justify-center w-8 h-8" 
-                        onclick="openModal('{{ interface.name }}', '{{ interface.vlan }}', '{{ interface.mac }}')">
-                        {{ interface.name.split('/')[-1] }} <!-- Only display the interface number -->
+                    <div class="relative">
+                        <button data-popover-target="popover-{{ interface.name }}" data-popover-placement="right" type="button" class="status-box 
+                            {% if interface.shutdown == '2' %} bg-gray-500 
+                            {% elif interface.status == '1' %} bg-green-500 
+                            {% elif interface.status == '2' %} bg-red-500 
+                            {% else %} bg-gray-500 {% endif %} 
+                            text-white font-bold rounded flex items-center justify-center w-8 h-8">
+                            {{ interface.name.split('/')[-1] }} <!-- Only display the interface number -->
+                        </button>
+                        <div data-popover id="popover-{{ interface.name }}" role="tooltip" class="absolute z-10 invisible w-64 text-sm text-gray-500 transition-opacity duration-300 bg-white border border-gray-200 rounded-lg shadow-sm opacity-0 dark:text-gray-400 dark:border-gray-600 dark:bg-gray-800">
+                            <div class="px-3 py-2 bg-gray-100 border-b border-gray-200 rounded-t-lg dark:border-gray-600 dark:bg-gray-700">
+                                <h3 class="font-semibold text-gray-900 dark:text-white">Interface Details</h3>
+                            </div>
+                            <div class="px-3 py-2">
+                                <p>Name: {{ interface.name }}</p>
+                                <p>VLAN: {{ interface.vlan }}</p>
+                                <p>MAC: {{ interface.mac }}</p>
+                            </div>
+                            <div data-popper-arrow></div>
+                        </div>
                     </div>
                 {% endfor %}
             </div>
             <div class="flex space-x-1">
                 {% for interface in groups.even %}
-                    <div class="status-box 
-                        {% if interface.shutdown == '2' %} bg-gray-500 
-                        {% elif interface.status == '1' %} bg-green-500 
-                        {% elif interface.status == '2' %} bg-red-500 
-                        {% else %} bg-gray-500 {% endif %} 
-                        text-white font-bold rounded flex items-center justify-center w-8 h-8" 
-                        onclick="openModal('{{ interface.name }}', '{{ interface.vlan }}', '{{ interface.mac }}')">
-                        {{ interface.name.split('/')[-1] }} <!-- Only display the interface number -->
+                    <div class="relative">
+                        <button data-popover-target="popover-{{ interface.name }}" data-popover-placement="right" type="button" class="status-box 
+                            {% if interface.shutdown == '2' %} bg-gray-500 
+                            {% elif interface.status == '1' %} bg-green-500 
+                            {% elif interface.status == '2' %} bg-red-500 
+                            {% else %} bg-gray-500 {% endif %} 
+                            text-white font-bold rounded flex items-center justify-center w-8 h-8">
+                            {{ interface.name.split('/')[-1] }} <!-- Only display the interface number -->
+                        </button>
+                        <div data-popover id="popover-{{ interface.name }}" role="tooltip" class="absolute z-10 invisible w-64 text-sm text-gray-500 transition-opacity duration-300 bg-white border border-gray-200 rounded-lg shadow-sm opacity-0 dark:text-gray-400 dark:border-gray-600 dark:bg-gray-800">
+                            <div class="px-3 py-2 bg-gray-100 border-b border-gray-200 rounded-t-lg dark:border-gray-600 dark:bg-gray-700">
+                                <h3 class="font-semibold text-gray-900 dark:text-white">Interface Details</h3>
+                            </div>
+                            <div class="px-3 py-2">
+                                <p>Name: {{ interface.name }}</p>
+                                <p>VLAN: {{ interface.sttaus }}</p>
+                                <p>MAC: {{ interface.mac }}</p>
+                            </div>
+                            <div data-popper-arrow></div>
+                        </div>
                     </div>
                 {% endfor %}
             </div>
         </div>
     {% endfor %}
 </div>
+
 
 <!-- Modal Structure -->
 <div id="interfaceModal" class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 hidden">
@@ -77,10 +100,8 @@
         </div>
     </div>
 </div>
-</div>
 
-<-- Switch modal -->
-
+<!-- Switch modal -->
 <!-- Modal toggle -->
 <div class="flex justify-center m-5">
     <button id="updateSwitchButton" data-modal-target="updateSwitchModal" data-modal-toggle="updateSwitchModal" class="hidden"></button>
@@ -155,7 +176,6 @@
     </div>
 </div>
 
-
 <script>
     function openEditModal(switchId) {
         document.getElementById('updateSwitchButton').click();
@@ -169,24 +189,57 @@
 </script>
 
 <script>
-    function openModal(interfaceName) {
-        document.getElementById('modalContent').innerText = interfaceName;
-        document.getElementById('interfaceModal').classList.remove('hidden');
+    function openEditModal(switchId) {
+        document.getElementById('updateSwitchButton').click();
+        const form = document.getElementById('updateSwitchForm');
+        form.action = `/edit_switch/${switchId}`;
     }
 
-    function closeModal() {
-        document.getElementById('interfaceModal').classList.add('hidden');
-    }
+    document.addEventListener("DOMContentLoaded", function(event) {
+        document.getElementById('updateSwitchButton').click();
+    });
 
-    function toggleViewMode() {
-        let switchView = document.getElementById('switch-view');
-        if (switchView.classList.contains('grid-cols-4')) {
-            switchView.classList.remove('grid-cols-4');
-            switchView.classList.add('grid-cols-2');
-        } else {
-            switchView.classList.remove('grid-cols-2');
-            switchView.classList.add('grid-cols-4');
+    document.querySelectorAll('[data-popover-target]').forEach(button => {
+        button.addEventListener('mouseover', event => {
+            const popoverId = event.currentTarget.getAttribute('data-popover-target');
+            const popover = document.getElementById(popoverId);
+            if (!popover.classList.contains('clicked')) {
+                popover.classList.remove('invisible', 'opacity-0');
+                popover.classList.add('visible', 'opacity-100');
+            }
+        });
+
+        button.addEventListener('mouseout', event => {
+            const popoverId = event.currentTarget.getAttribute('data-popover-target');
+            const popover = document.getElementById(popoverId);
+            if (!popover.classList.contains('clicked')) {
+                popover.classList.remove('visible', 'opacity-100');
+                popover.classList.add('invisible', 'opacity-0');
+            }
+        });
+
+        button.addEventListener('click', event => {
+            const popoverId = event.currentTarget.getAttribute('data-popover-target');
+            const popover = document.getElementById(popoverId);
+            popover.classList.toggle('clicked');
+            if (popover.classList.contains('clicked')) {
+                popover.classList.add('visible', 'opacity-100');
+                popover.classList.remove('invisible', 'opacity-0');
+            } else {
+                popover.classList.remove('visible', 'opacity-100');
+                popover.classList.add('invisible', 'opacity-0');
+            }
+        });
+    });
+
+    document.addEventListener('click', event => {
+        if (!event.target.closest('[data-popover-target]') && !event.target.closest('[data-popover]')) {
+            document.querySelectorAll('[data-popover]').forEach(popover => {
+                popover.classList.remove('visible', 'opacity-100', 'clicked');
+                popover.classList.add('invisible', 'opacity-0');
+            });
         }
-    }
+    });
 </script>
+
 {% endblock %}

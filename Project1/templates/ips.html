@@ -276,13 +276,13 @@
                 <tr data-status="{{ status }}" data-sort-status="{{ status }}">
                     <td class="px-6 py-4 whitespace-nowrap">
                         {% if ip.status|int == 1 %}
-                            <i class="fa-solid fa-network-wired text-green-400 text-xl"></i>
+                            <i class="fa-solid fa-ethernet text-green-400 text-xl"></i>
                         {% elif ip.status|int == 0 %}
-                            <i class="fa-solid fa-network-wired text-red-400 text-xl"></i>
+                            <i class="fa-solid fa-ethernet text-red-400 text-xl"></i>
                         {% elif ip.status|int == 3 %}
-                            <i class="fa-solid fa-network-wired text-yellow-400 text-xl"></i>
+                            <i class="fa-solid fa-ethernet text-yellow-400 text-xl"></i>
                         {% else %}
-                            <i class="fa-solid fa-network-wired text-gray-400 text-xl"></i>
+                            <i class="fa-solid fa-ethernet text-gray-400 text-xl"></i>
                         {% endif %}
                         <!-- Add status text hidden for visual but visible for search -->
                         <span class="status-text" style="display: none;">{{ status }}</span>
@@ -414,8 +414,10 @@
             </div>
         </div>
     </div>
-</div>pts -->
+</div>
  
+
+
 
 <script>
     function openDeleteModal(ipId, subnetId) {

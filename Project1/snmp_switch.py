@@ -45,7 +45,7 @@ def store_snmp_data(switch_id, snmp_data):
     logging.debug(f"Storing SNMP Data for switch_id {switch_id}: {snmp_data}")
     try:
         # Ensure the mac data fits within the column size constraints
-        max_mac_length = 255  # Adjust this value based on your actual column size
+        max_mac_length = 4096  # Adjust this value based on your actual column size
         mac_data = snmp_data['mac']
         if len(mac_data) > max_mac_length:
             mac_data = mac_data[:max_mac_length]
