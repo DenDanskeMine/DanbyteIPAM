@@ -18,13 +18,13 @@ import asyncio
 from asgiref.wsgi import WsgiToAsgi
 from subnets import add_new_subnet
 
-
 # Configure logging
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
 
 app = Flask(__name__)
 app.secret_key = 'supersecretkey'
 asgi_app = WsgiToAsgi(app)
+bcrypt = Bcrypt(app)
 
 @app.context_processor
 def inject_switches():
