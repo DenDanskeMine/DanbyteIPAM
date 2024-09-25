@@ -10,32 +10,6 @@ YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
-# Remove any old MariaDB installations and databases
-echo -e "${RED}Stopping MariaDB service...${NC}"
-sudo systemctl stop mariadb || true
-
-echo -e "${RED}Removing MariaDB packages...${NC}"
-sudo apt-get purge -y mariadb-server mariadb-client mariadb-common mariadb-server-core mariadb-client-core
-
-echo -e "${RED}Removing MariaDB configuration files and data...${NC}"
-sudo rm -rf /etc/mysql /var/lib/mysql /var/log/mysql /var/log/mysql.*
-
-echo -e "${RED}Cleaning up residual dependencies...${NC}"
-sudo apt-get autoremove -y
-sudo apt-get autoclean
-
-echo -e "${RED}Verifying MariaDB removal...${NC}"
-if dpkg -l | grep -q mariadb; then
-    echo -e "${RED}MariaDB is still installed. Exiting...${NC}"
-    exit 1
-else
-    echo -e "${GREEN}MariaDB successfully removed.${NC}"
-fi
-
-echo -e "${RED}Checking for stuck MariaDB services...${NC}"
-sudo systemctl daemon-reload
-sudo systemctl reset-failed
-
 # Update system and install necessary packages
 echo -e "${BLUE}Updating system and installing dependencies...${NC}"
 sudo apt update
@@ -58,18 +32,10 @@ pip install -r requirements.txt
 echo -e "${BLUE}Installing Tailwind CSS and other dependencies...${NC}"
 npm install
 
-
-sudo apt-get purge mariadb-server mariadb-client mariadb-common mariadb-server-core mariadb-client-core
-sudo rm -rf /etc/mysql /var/lib/mysql /var/log/mysql /var/log/mysql.*
-sudo rm -rf /etc/mysql/
-sudo apt-get autoremove
-sudo apt-get autoclean
-dpkg -l | grep mariadb
-sudo systemctl daemon-reload
-sudo systemctl reset-failed
-sudo apt update
-sudo apt install mariadb-server
-
+# Start MariaDB service
+echo -e "${BLUE}Starting MariaDB service...${NC}"
+sudo systemctl start mariadb
+sudo systemctl enable mariadb
 
 # Secure MariaDB installation
 echo -e "${BLUE}Securing MariaDB installation...${NC}"
