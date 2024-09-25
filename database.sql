@@ -152,3 +152,5 @@ CREATE INDEX form_field_id
 
 CREATE INDEX ip_id
     ON dynamic_values (ip_id);
+
+ALTER TABLE SWITCHES ADD COLUMN toggle_SNMP TINYINT(1) DEFAULT 0;
