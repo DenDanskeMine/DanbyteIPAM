@@ -6,7 +6,7 @@ set -e
 # Update system and install necessary packages
 echo "Updating system and installing dependencies..."
 sudo apt update
-sudo apt install -y python3-pip python3-venv mariadb-server npm
+sudo apt install -y python3-pip python3-venv mariadb-server npm libsnmp-dev snmp-mibs-downloader
 
 # Setting up virtual environment and installing Python dependencies
 echo "Setting up Python virtual environment..."
