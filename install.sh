@@ -90,4 +90,4 @@ echo -e "${GREEN}Password: user${NC}"
 echo ""
 echo -e "${RED}Please change the default password after logging in!${NC}"
 
-uvicorn src.app:asgi_app --host 0.0.0.0 --port 8000 --reload
+exit 0
