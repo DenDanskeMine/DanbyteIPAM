@@ -1,5 +1,5 @@
 import logging
-from easysnmp import Session
+from easysnmp import Session, EasySNMPTimeoutError
 import src.db as db
 import binascii
 
@@ -7,39 +7,47 @@ import binascii
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
 
 def gather_snmp_data(ip, community='public'):
-    session = Session(hostname=ip, community=community, version=2)
+    try:
+        session = Session(hostname=ip, community=community, version=2)
 
-    # Example OIDs for demonstration purposes
-    numOf_int_oid = '1.3.6.1.2.1.2.1.0'  # Number of interfaces
-    int_names_oid = '1.3.6.1.2.1.2.2.1.2'  # Interface names
-    int_status_oid = '1.3.6.1.2.1.2.2.1.8'  # Interface statuses
-    is_shutdown_oid = '1.3.6.1.2.1.2.2.1.7'  # Interface shutdown status
-    vlan_oid = '1.3.6.1.2.1.17.7.1.4.5.1.1'  # VLAN per interface
-    mac_oid = '1.3.6.1.2.1.2.2.1.6'  # MAC address per interface
+        # Example OIDs for demonstration purposes
+        numOf_int_oid = '1.3.6.1.2.1.2.1.0'  # Number of interfaces
+        int_names_oid = '1.3.6.1.2.1.2.2.1.2'  # Interface names
+        int_status_oid = '1.3.6.1.2.1.2.2.1.8'  # Interface statuses
+        is_shutdown_oid = '1.3.6.1.2.1.2.2.1.7'  # Interface shutdown status
+        vlan_oid = '1.3.6.1.2.1.17.7.1.4.5.1.1'  # VLAN per interface
+        mac_oid = '1.3.6.1.2.1.2.2.1.6'  # MAC address per interface
 
-    # Collect SNMP data
-    numOf_int = session.get(numOf_int_oid).value
-    int_names = [item.value for item in session.walk(int_names_oid)]
-    int_status = [item.value for item in session.walk(int_status_oid)]
-    is_shutdown = [item.value for item in session.walk(is_shutdown_oid)]
-    vlan = [item.value for item in session.walk(vlan_oid)]
-    mac = [item.value for item in session.walk(mac_oid)]
+        # Collect SNMP data
+        numOf_int = session.get(numOf_int_oid).value
+        int_names = [item.value for item in session.walk(int_names_oid)]
+        int_status = [item.value for item in session.walk(int_status_oid)]
+        is_shutdown = [item.value for item in session.walk(is_shutdown_oid)]
+        vlan = [item.value for item in session.walk(vlan_oid)]
+        mac = [item.value for item in session.walk(mac_oid)]
 
-    logging.debug(f"SNMP Data for IP {ip}: numOf_int={numOf_int}, int_names={int_names}, int_status={int_status}, is_shutdown={is_shutdown}, vlan={vlan}, mac={mac}")
+        logging.debug(f"SNMP Data for IP {ip}: numOf_int={numOf_int}, int_names={int_names}, int_status={int_status}, is_shutdown={is_shutdown}, vlan={vlan}, mac={mac}")
 
-    return {
-        'numOf_int': numOf_int,
-        'int_names': ','.join(int_names),  # Store as comma-separated values
-        'int_status': ','.join(int_status),  # Store as comma-separated values
-        'is_shutdown': ','.join(is_shutdown),  # Store as comma-separated values for each interface
-        'vlan': ','.join(vlan),  # Store as comma-separated values
-        'mac': format_mac_addresses(mac)  # Store as comma-separated hex values
-    }
+        return {
+            'numOf_int': numOf_int,
+            'int_names': ','.join(int_names),  # Store as comma-separated values
+            'int_status': ','.join(int_status),  # Store as comma-separated values
+            'is_shutdown': ','.join(is_shutdown),  # Store as comma-separated values for each interface
+            'vlan': ','.join(vlan),  # Store as comma-separated values
+            'mac': format_mac_addresses(mac)  # Store as comma-separated hex values
+        }
+    except EasySNMPTimeoutError as e:
+        logging.error(f"Error collecting SNMP data from {ip}: {e}")
+        return None
 
 def format_mac_addresses(mac_list):
     return ','.join(binascii.hexlify(mac.encode()).decode() for mac in mac_list)
 
 def store_snmp_data(switch_id, snmp_data):
+    if snmp_data is None:
+        logging.error(f"SNMP data for switch_id {switch_id} is None, skipping storage.")
+        return
+
     conn = db.get_db_connection()
     cursor = conn.cursor()
     logging.debug(f"Storing SNMP Data for switch_id {switch_id}: {snmp_data}")
@@ -79,10 +87,13 @@ def snmp_switch():
     conn.close()
 
     for switch in switches:
-        ip = switch['ip_address']
-        switch_id = switch['id']
-        snmp_data = gather_snmp_data(ip)
-        store_snmp_data(switch_id, snmp_data)
+        if switch['toggle_SNMP'] == 1:
+            ip = switch['ip_address']
+            switch_id = switch['id']
+            snmp_data = gather_snmp_data(ip)
+            store_snmp_data(switch_id, snmp_data)
+        else:
+            logging.debug(f"SNMP data collection is disabled for switch_id {switch['id']}")
 
     return switches
 
@@ -90,12 +101,16 @@ def refresh_snmp_data_for_switch(switch_id):
     conn = db.get_db_connection()
     cursor = conn.cursor(dictionary=True)
     
-    # Get the IP address of the switch
-    cursor.execute('SELECT ip_address FROM SWITCHES WHERE id = %s', (switch_id,))
+    # Get the IP address and toggle_SNMP value of the switch
+    cursor.execute('SELECT ip_address, toggle_SNMP FROM SWITCHES WHERE id = %s', (switch_id,))
     switch = cursor.fetchone()
     
     if not switch:
         logging.error(f"No switch found with id {switch_id}")
+        return
+    
+    if switch['toggle_SNMP'] == 0:
+        logging.debug(f"SNMP data collection is disabled for switch_id {switch_id}")
         return
     
     ip = switch['ip_address']
