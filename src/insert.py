@@ -49,23 +49,27 @@ def generate_unique_hostnames(count):
     """
     Generates a list of unique hostnames.
     """
-    return [f"DB-SWITCH-{i:03d}" for i in range(1, count + 1)]
+    return [f"DB-SWITCH-MIL-{i:03d}" for i in range(1, count + 1)]
 
 def generate_unique_ip_addresses(count):
     """
     Generates a list of unique IP addresses starting from 10.0.0.1.
     """
     ip_addresses = []
+    octet2 = 5
     octet3 = 0
     octet4 = 1
     for _ in range(count):
         if octet4 > 254:
             octet4 = 1
             octet3 += 1
-            if octet3 > 255:
-                logging.error("Exceeded IP address range.")
-                sys.exit(1)
-        ip = f"10.1.{octet3}.{octet4}"
+            if octet3 > 254:
+                octet3 = 0
+                octet2 += 1
+                if octet2 > 254:
+                    logging.error("Exceeded IP address range.")
+                    sys.exit(1)
+        ip = f"10.{octet2}.{octet3}.{octet4}"
         ip_addresses.append(ip)
         octet4 += 1
     return ip_addresses
@@ -74,7 +78,7 @@ def main():
     """
     Main function to generate and insert switches.
     """
-    count = 10000
+    count = 1000000
 
     # Generate unique hostnames and IP addresses
     hostnames = generate_unique_hostnames(count)
@@ -106,7 +110,9 @@ def main():
     firmware_versions = ['15.2(4)', '6.7.R', '12.2(55)', '15.2(4)', '6.7.R']
     port_counts = [24, 48, 12]
     is_online_options = [1, 0]
+     
     is_favorite_options = [0, 0]
+    toggle_SNMP_options = [0, 0]
 
     for i in range(count):
         hostname = hostnames[i]
@@ -118,6 +124,7 @@ def main():
         port_count = random.choice(port_counts)
         is_online = random.choice(is_online_options)
         is_favorite = random.choice(is_favorite_options)
+        toggle_SNMP = random.choice(toggle_SNMP_options)
 
         add_new_switch(
             hostname, ip_address, location, community, 
