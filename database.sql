@@ -115,6 +115,11 @@ CREATE TABLE `USERS`
         unique (username)
 );
 
+-- Insert user data
+INSERT INTO `USERS` (id, username, password, name, lastname, ro, is_admin, created_at) VALUES
+(1, 'admin', 'pbkdf2:sha256:600000$HgGldritoiusD84l$17824fbd6e443e61dd4ce61d10eaeb5ea57e753a403d708c5cc6c6a3fec046b6', 'admin', 'admin', 0, 1, '2024-09-22 17:53:41'),
+(2, 'user', 'pbkdf2:sha256:600000$jRK48Nze1SpCOTVMODxoBwG3lHW3KVaE20LrL1zTTMEE9Uwru7ITZVZRAaLlXtKh$c3cea1ceb91aa8437767f8f9a3aa28c3659437cb58152b778c2cdae7d3f90c56', 'Test', 'User', 0, 0, '2024-09-23 16:04:27');
+
 DROP TABLE IF EXISTS `form_fields`;
 CREATE TABLE `form_fields`
 (
