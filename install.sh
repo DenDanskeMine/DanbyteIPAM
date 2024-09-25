@@ -11,12 +11,30 @@ BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
 # Remove any old MariaDB installations and databases
-echo -e "${RED}Removing any old MariaDB installations and databases...${NC}"
+echo -e "${RED}Stopping MariaDB service...${NC}"
 sudo systemctl stop mariadb || true
-sudo apt-get remove --purge -y mariadb-server mariadb-client mariadb-common
+
+echo -e "${RED}Removing MariaDB packages...${NC}"
+sudo apt-get purge -y mariadb-server mariadb-client mariadb-common mariadb-server-core mariadb-client-core
+
+echo -e "${RED}Removing MariaDB configuration files and data...${NC}"
+sudo rm -rf /etc/mysql /var/lib/mysql /var/log/mysql /var/log/mysql.*
+
+echo -e "${RED}Cleaning up residual dependencies...${NC}"
 sudo apt-get autoremove -y
 sudo apt-get autoclean
-sudo rm -rf /etc/mysql /var/lib/mysql /var/log/mysql /var/run/mysqld
+
+echo -e "${RED}Verifying MariaDB removal...${NC}"
+if dpkg -l | grep -q mariadb; then
+    echo -e "${RED}MariaDB is still installed. Exiting...${NC}"
+    exit 1
+else
+    echo -e "${GREEN}MariaDB successfully removed.${NC}"
+fi
+
+echo -e "${RED}Checking for stuck MariaDB services...${NC}"
+sudo systemctl daemon-reload
+sudo systemctl reset-failed
 
 # Update system and install necessary packages
 echo -e "${BLUE}Updating system and installing dependencies...${NC}"
