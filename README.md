@@ -25,30 +25,19 @@ DanbyteIPAM is an advanced IP Address Management (IPAM) system designed to simpl
 - **Jinja2**
 
 ### Installation
-
-1. Clone the repository:
-
-   ```bash
-   git clone https://github.com/yourusername/DanbyteIPAM.git
-    ```
-Navigate into the project directory:
-
- ```bash
+```bash
+git clone -b PRE-DEMO https://github.com/DenDanskeMine/DanbyteIPAM.git 
 cd DanbyteIPAM
- ```
-Install the required dependencies:
+chmod +x install.sh
+./install.sh
+```
+ 
+run with: 
+```bash
+uvicorn src.app:asgi_app --host 0.0.0.0 --port 8000 --reload
+```
 
- ```bash
-pip install -r requirements.txt
- ```
-Set up the database by running the provided SQL scripts for switches, subnets, ips, and other related tables.
-
-Run the application:
-
- ```bash
-flask run
- ```
-Access the application in your browser at http://localhost:5000.
+access the web interface at http://localhost:8000
 
 Usage
 Switch Management: Navigate to the Switches section to view and update your favorite switches.
