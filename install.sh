@@ -42,7 +42,13 @@ npm install
 
 # Start MariaDB service
 echo -e "${BLUE}Starting MariaDB service...${NC}"
-sudo systemctl start mariadb
+sudo systemctl start mariadb || {
+    echo -e "${RED}Failed to start MariaDB service. Checking status...${NC}"
+    sudo systemctl status mariadb
+    echo -e "${RED}Checking journal logs...${NC}"
+    sudo journalctl -xeu mariadb.service
+    exit 1
+}
 sudo systemctl enable mariadb
 
 # Secure MariaDB installation
