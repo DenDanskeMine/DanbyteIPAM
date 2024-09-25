@@ -1,0 +1,439 @@
+<!-- templates/show-ips.html -->
+
+{% extends "base.html" %}
+{% block content %}
+<div class="container mx-auto p-4">
+    <!-- Header -->
+    <div class="mb-6">
+        <h1 class="text-2xl font-bold text-gray-900 dark:text-white">IPs in Subnet: {{ subnet.name }}</h1>
+        <p class="text-gray-600 dark:text-gray-300">Range: {{ subnet.range }}</p>
+    </div>
+
+    <!-- Status Overview -->
+    <div class="bg-gray-50 dark:bg-gray-800 p-4 rounded-lg mb-6">
+        <div class="grid grid-cols-4 gap-4">
+            {% for status, count in status_counts.items() %}
+            <div class="flex flex-col items-center bg-white dark:bg-gray-700 p-4 rounded-lg shadow">
+                <div class="text-xl font-semibold text-gray-800 dark:text-gray-200">{{ count }}</div>
+                <div class="text-sm text-gray-600 dark:text-gray-400">{{ status }}</div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Chart and Grid Section -->
+    <div class="grid grid-cols-3 gap-6 mb-6">
+        <!-- Pie Chart -->
+        <div class="col-span-2 bg-white dark:bg-gray-700 p-4 rounded-lg shadow">
+            <h2 class="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4">IP Status Distribution</h2>
+            <div id="pie-chart"></div>
+        </div>
+
+        <!-- IP Availability Grid -->
+        <div class="bg-white dark:bg-gray-700 p-4 rounded-lg shadow">
+            <h2 class="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4">IP Availability</h2>
+            <div class="grid grid-cols-8 gap-2">
+                {% for ip in subnet_range.hosts() %}
+                    {% if ip in used_ips %}
+                        {% set ip_id = used_ips[ip] %}
+                        {% set ip_info = ip_data[ip] %}
+                        {% set status = 'Unknown' %}
+                        {% if ip_info.status|int == 1 %}
+                            {% set status = 'Active' %}
+                            {% set bg_color = 'bg-green-400 hover:bg-green-500' %}
+                        {% elif ip_info.status|int == 0 %}
+                            {% set status = 'Down' %}
+                            {% set bg_color = 'bg-red-400 hover:bg-red-500' %}
+                        {% elif ip_info.status|int == 3 %}
+                            {% set status = 'Warning' %}
+                            {% set bg_color = 'bg-yellow-400 hover:bg-yellow-500' %}
+                        {% else %}
+                            {% set bg_color = 'bg-blue-400 hover:bg-blue-500' %}
+                        {% endif %}
+                        <a href="#" onclick="openEditIpModal('{{ ip_info.id }}')" 
+                           class="{{ bg_color }} text-white font-bold p-2 rounded transition duration-200 ease-in-out text-center"
+                           title="{{ status }}">
+                            {{ ip.compressed.split('.')[-1] }}
+                        </a>
+                    {% else %}
+                        <!-- Available IPs - Grey -->
+                        <a href="#" onclick="openAddIpModal('{{ ip.compressed }}')" 
+                           class="bg-gray-500 hover:bg-gray-600 text-white font-bold p-2 rounded transition duration-200 ease-in-out text-center"
+                           title="Available">
+                            {{ ip.compressed.split('.')[-1] }}
+                        </a>
+                    {% endif %}
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <!-- IP Table with Status and Details -->
+    <div class="bg-white dark:bg-gray-700 p-6 rounded-lg shadow">
+        <h2 class="text-xl font-semibold text-gray-800 dark:text-gray-200 mb-4">IP Addresses</h2>
+        <table id="ip-table" class="min-w-full divide-y divide-gray-200 dark:divide-gray-600">
+            <thead class="bg-gray-100 dark:bg-gray-800">
+                <tr>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Status</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">IP Address</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Hostname</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Description</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Actions</th>
+                </tr>
+            </thead>
+            <tbody class="bg-white dark:bg-gray-700 divide-y divide-gray-200 dark:divide-gray-600">
+                {% for ip in ips %}
+                {% set status = 'Unknown' %}
+                {% if ip.status|int == 1 %}
+                    {% set status = 'Active' %}
+                {% elif ip.status|int == 0 %}
+                    {% set status = 'Down' %}
+                {% elif ip.status|int == 3 %}
+                    {% set status = 'Warning' %}
+                {% endif %}
+                <tr>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        {% if ip.status|int == 1 %}
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full bg-green-100 text-green-800">
+                                Active
+                            </span>
+                        {% elif ip.status|int == 0 %}
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full bg-red-100 text-red-800">
+                                Down
+                            </span>
+                        {% elif ip.status|int == 3 %}
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full bg-yellow-100 text-yellow-800">
+                                Warning
+                            </span>
+                        {% else %}
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full bg-gray-100 text-gray-800">
+                                Unknown
+                            </span>
+                        {% endif %}
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">
+                        {{ ip.address }}
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                        {{ ip.hostname or 'N/A' }}
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                        {{ ip.description or 'N/A' }}
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                        <button 
+                            onclick="openEditIpModal('{{ ip.id }}')" 
+                            class="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-600 mr-2">
+                            Edit
+                        </button>
+                        <a href="{{ url_for('show_ip', ip_id=ip.id) }}" class="text-indigo-600 hover:text-indigo-900 dark:text-indigo-400 dark:hover:text-indigo-600">
+                            View
+                        </a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Include the Edit IP Modal once, outside the loop -->
+</div>
+
+<!-- Modal for Adding IP -->
+<div id="addIpModal" class="fixed z-10 inset-0 overflow-y-auto hidden" aria-labelledby="addIpModalTitle" role="dialog" aria-modal="true">
+    <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+        <!-- Background overlay -->
+        <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" aria-hidden="true"></div>
+
+        <!-- Modal panel -->
+        <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+        <div class="inline-block align-bottom bg-white dark:bg-gray-800 rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
+            <div class="bg-white dark:bg-gray-800 px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+                <!-- Modal Header -->
+                <div class="sm:flex sm:items-start">
+                    <div class="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left">
+                        <h3 class="text-lg leading-6 font-medium text-gray-900 dark:text-white" id="addIpModalTitle">
+                            Add New IP
+                        </h3>
+                        <div class="mt-2">
+                            <form id="addIpForm" method="POST" action="{{ url_for('add_ip', subnet_id=subnet.id) }}">
+                                {{ csrf_token() }}
+                                <div class="mb-4">
+                                    <label for="add-address" class="block text-sm font-medium text-gray-700 dark:text-gray-300">IP Address</label>
+                                    <select name="address" id="add-address" required class="mt-1 block w-full bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
+                                        <option value="">Select an IP</option>
+                                        {% for ip in available_ips %}
+                                        <option value="{{ ip }}">{{ ip }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                <div class="mb-4">
+                                    <label for="add-hostname" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Hostname</label>
+                                    <input type="text" name="hostname" id="add-hostname" class="mt-1 block w-full bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500" placeholder="Enter hostname">
+                                </div>
+                                <div class="mb-4">
+                                    <label for="add-mac" class="block text-sm font-medium text-gray-700 dark:text-gray-300">MAC Address</label>
+                                    <input type="text" name="mac" id="add-mac" class="mt-1 block w-full bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500" placeholder="Enter MAC address">
+                                </div>
+                                <div class="mb-4">
+                                    <label for="add-description" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Description</label>
+                                    <textarea name="description" id="add-description" class="mt-1 block w-full bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500" placeholder="Enter description"></textarea>
+                                </div>
+                                <div class="mb-4">
+                                    <label for="add-switch_id" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Switch</label>
+                                    <select name="switch_id" id="add-switch_id" class="mt-1 block w-full bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
+                                        <option value="">Select a switch</option>
+                                        {% for switch in switches %}
+                                        <option value="{{ switch.id }}">{{ switch.hostname }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                <div class="mb-4">
+                                    <label for="add-port" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Port</label>
+                                    <input type="text" name="port" id="add-port" class="mt-1 block w-full bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500" placeholder="Enter port number">
+                                </div>
+                                <div class="flex justify-end">
+                                    <button type="button" onclick="closeAddIpModal()" class="mr-2 inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-gray-500 text-base font-medium text-white hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 sm:text-sm">
+                                        Cancel
+                                    </button>
+                                    <button type="submit" class="inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-blue-600 text-base font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:text-sm">
+                                        Add IP
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+                <!-- End Modal Header -->
+            </div>
+        </div>
+    </div>
+</div>
+
+
+
+<!-- templates/includes/edit-ip.html -->
+
+<!-- Edit IP Modal Content -->
+<!-- Edit IP Modal Content -->
+<div id="editIpModal" class="fixed inset-0 z-10 overflow-y-auto hidden" aria-labelledby="editIpModalTitle" role="dialog" aria-modal="true">
+    <!-- Modal Overlay -->
+    <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity"></div>
+
+    <!-- Modal Content -->
+    <div class="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+        <!-- This element is to trick the browser into centering the modal contents. -->
+        <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+
+        <div class="inline-block align-bottom bg-white dark:bg-gray-800 rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
+            <div class="bg-white dark:bg-gray-800 px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+                <div class="sm:flex sm:items-start">
+                    <div class="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left w-full">
+                        <h3 class="text-lg leading-6 font-medium text-gray-900 dark:text-white" id="editIpModalTitle">
+                            Edit IP Address
+                        </h3>
+                        <div class="mt-2">
+                            <!-- Form with consistent ID -->
+                            <form id="editIpForm" action="/edit_ip/__IP_ID__/" method="post">
+                                {{ csrf_token() }}
+                                <input type="hidden" name="ip_id" id="edit-ip-id" value="">
+                                <input type="hidden" name="subnet_id" id="edit-subnet-id" value="{{ subnet.id }}">
+
+                                <div class="mb-4">
+                                    <label for="edit-address" class="block text-sm font-medium text-gray-700 dark:text-gray-300">IP Address</label>
+                                    <select name="address" id="edit-address" required class="mt-1 block w-full bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
+                                        <option value="">Select an IP</option>
+                                        <!-- Options will be populated by JavaScript -->
+                                    </select>
+                                </div>
+
+                                <div class="mb-4">
+                                    <label for="edit-hostname" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Hostname</label>
+                                    <input type="text" name="hostname" id="edit-hostname" value="" class="mt-1 block w-full bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500" placeholder="Enter hostname">
+                                </div>
+
+                                <div class="mb-4">
+                                    <label for="edit-mac" class="block text-sm font-medium text-gray-700 dark:text-gray-300">MAC Address</label>
+                                    <input type="text" name="mac" id="edit-mac" value="" class="mt-1 block w-full bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500" placeholder="Enter MAC address">
+                                </div>
+
+                                <div class="mb-4">
+                                    <label for="edit-description" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Description</label>
+                                    <textarea name="description" id="edit-description" rows="3" class="mt-1 block w-full bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500" placeholder="Enter description"></textarea>
+                                </div>
+
+                                <div class="mb-4">
+                                    <label for="edit-switch_id" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Switch</label>
+                                    <select name="switch_id" id="edit-switch_id" class="mt-1 block w-full bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
+                                        <option value="">Select a switch</option>
+                                        {% for switch in switches %}
+                                        <option value="{{ switch.id }}">{{ switch.hostname }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+
+                                <div class="mb-4">
+                                    <label for="edit-port" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Port</label>
+                                    <input type="text" name="port" id="edit-port" value="" class="mt-1 block w-full bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500" placeholder="Enter port number">
+                                </div>
+
+                                <div class="flex justify-end">
+                                    <button type="button" onclick="closeEditIpModal()" class="mr-2 inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-gray-500 text-base font-medium text-white hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 sm:text-sm">
+                                        Cancel
+                                    </button>
+                                    <button type="submit" class="inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-blue-600 text-base font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:text-sm">
+                                        Save Changes
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+
+
+
+<!-- Scripts -->
+<!-- Pass available_ips to JavaScript -->
+<script>
+    const availableIps = {{ available_ips | tojson }};
+</script>
+
+<!-- Scripts -->
+<script>
+    // Function to open Add IP Modal
+    function openAddIpModal(ipAddress) {
+        console.log(`Opening Add IP Modal for IP Address: ${ipAddress}`); // Logging
+        document.getElementById('add-address').value = ipAddress;
+        document.getElementById('addIpModal').classList.remove('hidden');
+    }
+
+    // Function to close Add IP Modal
+    function closeAddIpModal() {
+        console.log('Closing Add IP Modal'); // Logging
+        document.getElementById('addIpModal').classList.add('hidden');
+        document.getElementById('addIpForm').reset(); // Reset form fields
+    }
+
+    // Function to open Edit IP Modal with IP ID
+    function openEditIpModal(ipId) {
+    console.log(`Opening Edit IP Modal for IP ID: ${ipId}`); // Logging
+
+    // Make an API call to fetch IP data
+    fetch(`/api/ip/${ipId}`)
+        .then(response => {
+            console.log(`API Response Status: ${response.status}`);
+            if (!response.ok) {
+                throw new Error(`Network response was not ok: ${response.statusText}`);
+            }
+            return response.json();
+        })
+        .then(data => {
+            console.log('Fetched IP Data:', data);
+
+            // Populate the form fields with the fetched data
+            document.getElementById('edit-ip-id').value = data.id;
+            document.getElementById('edit-subnet-id').value = data.subnet_id;
+
+            // Populate the 'edit-address' select field
+            const editAddressSelect = document.getElementById('edit-address');
+            editAddressSelect.innerHTML = ''; // Clear existing options
+
+            // Combine availableIps with the current IP
+            const combinedIps = new Set(availableIps);
+            combinedIps.add(data.address); // Ensure current IP is included
+
+            // Convert Set back to array and sort
+            const combinedIpsArray = Array.from(combinedIps).sort();
+
+            // Populate the select field
+            combinedIpsArray.forEach(ip => {
+                const option = document.createElement('option');
+                option.value = ip;
+                option.text = ip;
+                if (ip === data.address) {
+                    option.selected = true; // Set current IP as selected
+                }
+                editAddressSelect.appendChild(option);
+            });
+
+            // Populate other form fields
+            document.getElementById('edit-hostname').value = data.hostname || '';
+            document.getElementById('edit-mac').value = data.mac || '';
+            document.getElementById('edit-description').value = data.description || '';
+            document.getElementById('edit-switch_id').value = data.switch_id || '';
+            document.getElementById('edit-port').value = data.port || '';
+
+            // Dynamically set the form action
+            document.getElementById('editIpForm').action = `/edit_ip/${data.id}/`;
+
+            // Display the Edit IP Modal
+            document.getElementById('editIpModal').classList.remove('hidden');
+            console.log('Edit IP Modal displayed.');
+        })
+        .catch(error => {
+            console.error('Error fetching IP data:', error);
+            alert('Failed to fetch IP data. Please try again.');
+        });
+}
+
+function closeEditIpModal() {
+    document.getElementById('editIpModal').classList.add('hidden');
+}
+
+
+// Function to close Edit IP Modal
+function closeEditIpModal() {
+    console.log('Closing Edit IP Modal'); // Logging
+    document.getElementById('editIpModal').classList.add('hidden');
+    document.getElementById('editIpForm').reset(); // Reset form fields
+}
+
+    // Close modals when clicking outside the modal content
+    window.onclick = function(event) {
+        const addModal = document.getElementById('addIpModal');
+        const editModal = document.getElementById('editIpModal');
+        if (event.target == addModal) {
+            closeAddIpModal();
+        }
+        if (event.target == editModal) {
+            closeEditIpModal();
+        }
+    }
+</script>
+
+<script>
+    // Initialize ApexCharts Pie Chart
+    document.addEventListener('DOMContentLoaded', () => {
+        const options = {
+            series: {{ chart_series | tojson }},
+            chart: {
+                type: 'pie',
+                height: 350,
+            },
+            labels: {{ chart_labels | tojson }},
+            colors: {{ chart_colors_list | tojson }},
+            responsive: [{
+                breakpoint: 480,
+                options: {
+                    chart: {
+                        width: 200
+                    },
+                    legend: {
+                        position: 'bottom'
+                    }
+                }
+            }]
+        };
+
+        const chart = new ApexCharts(document.querySelector("#pie-chart"), options);
+        chart.render();
+    });
+</script>
+
+{% endblock %}

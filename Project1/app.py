@@ -1,12 +1,12 @@
-from flask import Flask, render_template, redirect, url_for, flash, request, session
+from flask import Flask, render_template, redirect, url_for, flash, request, session, jsonify
 from get_favorite_switch import get_favorite_switch
 from snmp_switch import snmp_switch, refresh_snmp_data_for_switch
-from switch_data import get_switch_data
+from switch_data import get_switch_data, add_new_switch
 from group_interfaces import group_interfaces_by_stack
 import db
 import logging
 from subnets import get_all_subnets, get_subnet, update_subnet
-from ips import get_ips_for_subnet, get_ip, add_ip_to_subnet, update_ip, get_ips_for_availability, scan_and_insert_ip, detect_hosts, scan_ips
+from ips import get_ips_for_subnet, get_ip, add_ip_to_subnet, update_ip, get_ips_for_availability, scan_and_insert_ip, detect_hosts, scan_ips, get_switch_by_hostname, delete_switch_by_id, get_switch_by_id
 from ipaddress import ip_network, IPv4Address  
 from get_favorite_subnets import get_favorite_subnets
 from get_favorite_ips import get_favorite_ips
@@ -15,14 +15,17 @@ from functools import wraps
 from werkzeug.security import generate_password_hash, check_password_hash
 from collections import defaultdict
 import asyncio
-
+from asgiref.wsgi import WsgiToAsgi
+from subnets import add_new_subnet
 
 # Configure logging
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
 
 app = Flask(__name__)
 app.secret_key = 'supersecretkey'
-
+asgi_app = WsgiToAsgi(app)
+bcrypt = Bcrypt(app)
+available_ips = None  
 
 @app.context_processor
 def inject_switches():
@@ -34,8 +37,9 @@ def inject_switches():
     offline_count = cursor.fetchone()['count']
     cursor.close()
     conn.close()
+    favorite_switches, count_favorite_switches = get_favorite_switch()
     num_switches = {'online': online_count, 'offline': offline_count}
-    return dict(num_switches=num_switches)
+    return dict(num_switches=num_switches, favorite_switches=favorite_switches, count_favorite_switches=count_favorite_switches)
 
 def hash_password(plain_password):
     return bcrypt.generate_password_hash(plain_password).decode('utf-8')
@@ -100,12 +104,23 @@ def register():
 
     return render_template('register.html')
 
+@app.route('/add-subnet', methods=['GET', 'POST'])
+@login_required
+def add_subnet():
+    if request.method == 'POST':
+        data = request.form.to_dict()
+        # Add the new subnet to the database
+        add_new_subnet(**data)
+        flash('Subnet added successfully!', 'success')
+        return redirect(url_for('show_subnets'))
+    return render_template('add-subnet.html', title='Add Subnet')
+
 @app.route('/scan-ips', methods=['POST'])
 @login_required
 def scan_ips_route():
     subnet_id = request.form.get('subnet_id')
     logging.info(f"Received request to scan subnet ID: {subnet_id}")
-    scan_ips(subnet_id)
+    asyncio.run(scan_ips(subnet_id))
     flash('IP scan completed!', 'success')
     return redirect(url_for('show_subnet_ips', subnet_id=subnet_id) if subnet_id else url_for('index'))
 
@@ -117,7 +132,6 @@ def detect_hosts_route():
     asyncio.run(detect_hosts(subnet_id))
     flash('Host detection completed!', 'success')
     return redirect(url_for('show_subnet_ips', subnet_id=subnet_id) if subnet_id else url_for('index'))
-
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
@@ -266,15 +280,17 @@ def show_subnet_ips(subnet_id):
         'Unknown': 0
     }
     for ip in ips:
-        status = ip['status']
-        if status == '1':
+        status = int(ip['status']) if ip['status'] is not None else -1
+        if status == 1:
             status_counts['Active'] += 1
-        elif status == '0':
+        elif status == 0:
             status_counts['Down'] += 1
-        elif status == '3':
+        elif status == 3:
             status_counts['Warning'] += 1
         else:
             status_counts['Unknown'] += 1
+
+
     
     # Add available IPs to the counts
     status_counts['Available'] = available_ips_count
@@ -303,22 +319,39 @@ def show_subnet_ips(subnet_id):
 
 
 
-@app.route('/ip/<int:ip_id>')
-@login_required
-def show_ip(ip_id):
-    ip = get_ip(ip_id)
-    return render_template('ip.html', title=f'IP {ip["address"]}', ip=ip)
-
 @app.route('/edit-ip/<int:ip_id>', methods=['GET', 'POST'])
 @login_required
 def edit_ip(ip_id):
     if request.method == 'POST':
         data = request.form.to_dict()
-        
-        # Handle case where switch_id is not selected (set it to None)
-        if not data.get('switch_id'):
+
+        # Convert checkbox values to integers (0 or 1)
+        data['is_resolvable'] = 1 if 'is_resolvable' in data else 0
+        data['is_scannable'] = 1 if 'is_scannable' in data else 0
+        data['show_status'] = 1 if 'show_status' in data else 0
+        data['is_gateway'] = 1 if 'is_gateway' in data else 0
+        data['is_favorite'] = 1 if 'is_favorite' in data else 0
+
+        # Handle 'switch_id' separately
+        switch_id = data.get('switch_id', '').strip()
+        if switch_id == '':
             data['switch_id'] = None
-        
+        else:
+            try:
+                data['switch_id'] = int(switch_id)
+            except ValueError:
+                data['switch_id'] = None  # Or handle the error as needed
+                logging.warning(f"Invalid switch_id value received: {switch_id}")
+
+        # Handle optional fields
+        optional_fields = ['hostname', 'mac', 'description', 'note', 'location', 'port']
+        for field in optional_fields:
+            if field not in data or data[field].strip() in ('', 'None'):
+                data[field] = None
+
+        # Debugging output
+        logging.info(f"Updating IP with data: {data}")
+
         # Update IP and redirect
         update_ip(ip_id, **data)
         flash('IP updated successfully!', 'success')
@@ -326,23 +359,55 @@ def edit_ip(ip_id):
 
     # Fetch the current IP and available switches
     current_ip = get_ip(ip_id)
+    available_ips = get_available_ips(current_ip['subnet_id'])
+
+    # Ensure the current IP address is included in the available IPs
+    if current_ip['address'] not in available_ips:
+        available_ips.append(current_ip['address'])
+
     all_switches = get_all_switches()
 
+    # Fetch the latest interface names for the selected switch
+    conn = db.get_db_connection()
+    cursor = conn.cursor(dictionary=True)
+    cursor.execute("""
+        SELECT int_names 
+        FROM SNMP_DATA_SWITCH 
+        WHERE switch_id = %s 
+        ORDER BY timestamp DESC 
+        LIMIT 1
+    """, (current_ip['switch_id'],))
+    switch_data = cursor.fetchone()
+    cursor.close()
+    conn.close()
+
+    interface_names = switch_data['int_names'].split(',') if switch_data else []
+
     return render_template(
         'edit-ip.html',
-        ip=current_ip,
-        available_ips=get_available_ips(current_ip['subnet_id']),
-        switches=all_switches
-    )
-
-
-    return render_template(
-        'edit-ip.html',
-        title=f'Edit IP {current_ip["address"]}',
         ip=current_ip,
         available_ips=available_ips,
-        switches=all_switches
+        switches=all_switches,
+        interface_names=interface_names
     )
+
+@app.route('/get_interfaces/<int:switch_id>')
+def get_interfaces(switch_id):
+    conn = db.get_db_connection()
+    cursor = conn.cursor(dictionary=True)
+    cursor.execute("""
+        SELECT int_names 
+        FROM SNMP_DATA_SWITCH 
+        WHERE switch_id = %s 
+        ORDER BY timestamp DESC 
+        LIMIT 1
+    """, (switch_id,))
+    switch_data = cursor.fetchone()
+    cursor.close()
+    conn.close()
+
+    interface_names = switch_data['int_names'].split(',') if switch_data else []
+    return jsonify(interface_names)
 
 @app.route('/edit-subnet/<int:subnet_id>', methods=['GET', 'POST'])
 @login_required
@@ -354,6 +419,13 @@ def edit_subnet(subnet_id):
         return redirect(url_for('show_subnet_ips', subnet_id=subnet_id))
     subnet = get_subnet(subnet_id)
     return render_template('edit-subnet.html', title=f'Edit Subnet {subnet["name"]}', subnet=subnet)
+
+@app.route('/ip/<int:ip_id>')
+@login_required
+def show_ip(ip_id):
+    ip = get_ip(ip_id)
+    return render_template('ip.html', title=f'IP {ip["address"]}', ip=ip)
+
 
 @app.route('/add-ip/<int:subnet_id>', methods=['POST'])
 @login_required
@@ -421,5 +493,128 @@ def show_switches():
     return render_template('switches.html', switches=switches)
 
 
+@app.route('/delete_ip/<int:ip_id>', methods=['POST'])
+def delete_ip(ip_id):
+    conn = db.get_db_connection()
+    cursor = conn.cursor()
+    try:
+        cursor.execute('DELETE FROM IPs WHERE id = %s', (ip_id,))
+        conn.commit()
+        flash('IP deleted successfully!', 'success')
+    except Exception as e:
+        logging.error(f"Error deleting IP ID {ip_id}: {e}")
+        conn.rollback()
+        flash('Error deleting IP.', 'danger')
+    finally:
+        cursor.close()
+        conn.close()
+    return redirect(url_for('show_subnet_ips', subnet_id=request.form['subnet_id']))
+
+@app.route('/edit_switch/<int:switch_id>', methods=['POST'])
+def edit_switch(switch_id):
+    if request.method == 'POST':
+        data = request.form.to_dict()
+
+        # Convert checkbox values to integers (0 or 1)
+        data['is_online'] = 1 if 'is_online' in data else 0
+        data['is_favorite'] = 1 if 'is_favorite' in data else 0
+
+        # Handle optional fields and validation
+        required_fields = ['hostname', 'ip_address']
+        for field in required_fields:
+            if not data.get(field) or data[field].strip() == '':
+                flash(f"Error: {field.replace('_', ' ').capitalize()} is required.", 'error')
+                return redirect(url_for('show_switch', switch_id=switch_id))
+
+        # Debugging output
+        logging.info(f"Updating switch with data: {data}")
+
+        try:
+            # Update switch and redirect
+            update_switch(switch_id, **data)
+            flash('Switch updated successfully!', 'success')
+            return redirect(url_for('show_switch', switch_id=switch_id))
+        except Exception as e:
+            logging.error(f"Error updating switch: {e}")
+            flash(f"Error updating switch: {e}", 'error')
+            return redirect(url_for('show_switch', switch_id=switch_id))
+
+    # Fetch the current switch
+    current_switch = get_switch(switch_id)
+
+    return render_template(
+        'edit-switch.html',
+        switch=current_switch
+    )
+
+@app.route('/add_switch', methods=['POST'])
+def add_switch():
+    if request.method == 'POST':
+        data = request.form.to_dict()
+
+        # Convert checkbox values to integers (0 or 1)
+        data['is_online'] = 1 if 'is_online' in data else 0
+        data['is_favorite'] = 1 if 'is_favorite' in data else 0
+
+        # Handle optional fields and validation
+        required_fields = ['hostname', 'ip_address']
+        for field in required_fields:
+            if not data.get(field) or data[field].strip() == '':
+                flash(f"Error: {field.replace('_', ' ').capitalize()} is required.", 'error')
+                return redirect(url_for('show_switches'))
+
+        logging.info(f"Adding switch with data: {data}")
+
+        try:
+            # Add switch and redirect
+            add_new_switch(**data)
+            flash('Switch added successfully!', 'success')
+            return redirect(url_for('show_switches'))
+        except Exception as e:
+            logging.error(f"Error adding switch: {e}")
+            flash(f"Error adding switch: {e}", 'error')
+            return redirect(url_for('show_switches'))
+
+    return render_template('switches.html')
+
+@app.route('/check_hostname', methods=['POST'])
+def check_hostname():
+    hostname = request.form.get('hostname')
+
+    if hostname:
+        # Use the function to check if the hostname exists
+        existing_switch = get_switch_by_hostname(hostname)
+        if existing_switch:
+            # Return a JSON response indicating the hostname is taken
+            return jsonify({'status': 'taken', 'message': 'Hostname already exists'})
+        else:
+            # Return a JSON response indicating the hostname is available
+            return jsonify({'status': 'available', 'message': 'Hostname is available'})
+    else:
+        # Handle the case where the hostname is empty
+        return jsonify({'status': 'error', 'message': 'Hostname cannot be empty'})
+
+
+@app.route('/delete_switch/<int:switch_id>', methods=['POST'])
+def delete_switch(switch_id):
+    # Fetch the switch using the ID
+    switch = get_switch_by_id(switch_id)  # Make sure you have this helper function
+
+    if not switch:
+        flash('Switch not found', 'error')
+        return redirect(url_for('show_switches'))
+
+    try:
+        # Perform deletion from the database
+        delete_switch_by_id(switch_id)
+        flash(f'Switch {switch["hostname"]} deleted successfully.', 'success')
+    except Exception as e:
+        flash(f'Error deleting switch: {e}', 'error')
+
+    return redirect(url_for('show_switches'))
+
+@app.route('/base1')
+def base1():
+    return render_template('base1.html')
 if __name__ == '__main__':
     app.run(debug=True)

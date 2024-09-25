@@ -13,7 +13,7 @@ def group_interfaces_by_stack(interfaces):
             continue
         
         # Updated regex to handle both prefixed and unprefixed interfaces
-        match = re.match(r'([a-zA-Z]*\d*[a-zA-Z]*\d*)(?:Ethernet)?(\d+/\d+/\d+|\d+/\d+|\d+)', name)
+        match = re.match(r'([a-zA-Z]*\d*[a-zA-Z]*\d*)(?:Ethernet|GigE|channel)?\s*(\d+/\d+/\d+|\d+/\d+|\d+)', name, re.IGNORECASE)
         
         # Handle matches
         if match:

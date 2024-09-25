@@ -1,4 +1,5 @@
 import db
+import logging
 
 def get_all_subnets():
     conn = db.get_db_connection()
@@ -26,6 +27,22 @@ def update_subnet(subnet_id, **kwargs):
         conn.commit()
     except Exception as e:
         logging.error(f"Error updating subnet: {e}")
+        raise
+    finally:
+        cursor.close()
+        conn.close()
+
+def add_new_subnet(name, range):
+    conn = db.get_db_connection()
+    cursor = conn.cursor()
+    try:
+        cursor.execute(
+            'INSERT INTO SUBNETS (name, `range`) VALUES (%s, %s)',
+            (name, range)
+        )
+        conn.commit()
+    except Exception as e:
+        logging.error(f"Error adding new subnet: {e}")
         raise
     finally:
         cursor.close()

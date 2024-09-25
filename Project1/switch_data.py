@@ -1,6 +1,7 @@
 import mysql.connector
 import db
 import logging
+from db import get_db_connection
 
 # Configure logging
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -65,3 +66,26 @@ def get_switch_data(switch_id):
         'int_status': int_status,
         'int_shutdown': int_shutdown
     }
+
+
+def add_new_switch(hostname, ip_address, location, community, model, firmware_version, port_count, is_online, is_favorite):
+    conn = db.get_db_connection()
+    cursor = conn.cursor()
+    try:
+        cursor.execute(
+            '''
+            INSERT INTO SWITCHES (hostname, ip_address, location, community, model, firmware_version, port_count, is_online, is_favorite)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+            ''',
+            (hostname, ip_address, location, community, model, firmware_version, port_count, is_online, is_favorite)
+        )
+        conn.commit()
+        logging.info(f"Switch {hostname} added successfully.")
+    except Exception as e:
+        logging.error(f"Error adding switch: {e}")
+        conn.rollback()
+    finally:
+        cursor.close()
+        conn.close()
+
+__all__ = ['get_switch_data', 'add_new_switch']
