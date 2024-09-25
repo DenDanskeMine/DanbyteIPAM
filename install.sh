@@ -67,7 +67,17 @@ sudo systemctl start mariadb || {
     sudo journalctl -xeu mariadb.service
     exit 1
 }
-sudo systemctl enable mariadb
+sudo apt-get purge mariadb-server mariadb-client mariadb-common mariadb-server-core mariadb-client-core
+sudo rm -rf /etc/mysql /var/lib/mysql /var/log/mysql /var/log/mysql.*
+sudo rm -rf /etc/mysql/
+sudo apt-get autoremove
+sudo apt-get autoclean
+dpkg -l | grep mariadb
+sudo systemctl daemon-reload
+sudo systemctl reset-failed
+sudo apt update
+sudo apt install mariadb-server
+
 
 # Secure MariaDB installation
 echo -e "${BLUE}Securing MariaDB installation...${NC}"
