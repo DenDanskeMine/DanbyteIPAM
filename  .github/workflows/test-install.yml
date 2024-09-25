@@ -1,0 +1,37 @@
+name: Test Install Script
+
+on: [push, pull_request]
+
+jobs:
+  test-install:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v3
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.12'
+
+    - name: Set up Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '16'
+
+    - name: Install dependencies
+      run: sudo apt-get update && sudo apt-get install -y mariadb-server libsnmp-dev snmp-mibs-downloader
+
+    - name: Run install script
+      run: |
+        chmod +x install.sh
+        ./install.sh
+
+    - name: Verify MariaDB service
+      run: sudo systemctl status mariadb
+
+    - name: Run basic test
+      run: |
+        source venv/bin/activate
+        python -c "import pymysql; conn = pymysql.connect(host='localhost', user='danbyte_admin', password='admin', database='DANBYTE'); print('Connection successful')"
