@@ -41,13 +41,13 @@ EOF
 
 # Create MariaDB user and database
 echo "Creating MariaDB user and database..."
-sudo mysql -u root -psecret <<MYSQL_SCRIPT
+sudo mysql -u root -pCHANGEME <<MYSQL_SCRIPT
+DROP USER IF EXISTS 'danbyte_admin'@'%';
 CREATE DATABASE IF NOT EXISTS DANBYTE;
 CREATE USER 'danbyte_admin'@'%' IDENTIFIED BY 'admin';
 GRANT ALL PRIVILEGES ON DANBYTE.* TO 'danbyte_admin'@'%';
 FLUSH PRIVILEGES;
 MYSQL_SCRIPT
-
 
 # Import database schema
 echo "Importing database schema..."
