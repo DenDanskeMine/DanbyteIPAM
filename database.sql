@@ -1,4 +1,5 @@
-create table SUBNETS
+DROP TABLE IF EXISTS `SUBNETS`;
+CREATE TABLE `SUBNETS`
 (
     name          varchar(255) null,
     `range`       varchar(255) null comment 'IP RANGE',
@@ -11,7 +12,8 @@ create table SUBNETS
         primary key
 );
 
-create table SWITCHES
+DROP TABLE IF EXISTS `SWITCHES`;
+CREATE TABLE `SWITCHES`
 (
     id               int auto_increment
         primary key,
@@ -29,7 +31,8 @@ create table SWITCHES
         unique (hostname)
 );
 
-create table IPs
+DROP TABLE IF EXISTS `IPs`;
+CREATE TABLE `IPs`
 (
     id            int auto_increment
         primary key,
@@ -62,10 +65,11 @@ create table IPs
             on delete cascade
 );
 
-create index subnet_id
-    on IPs (subnet_id);
+CREATE INDEX subnet_id
+    ON IPs (subnet_id);
 
-create table SNMP_DATA_SWITCH
+DROP TABLE IF EXISTS `SNMP_DATA_SWITCH`;
+CREATE TABLE `SNMP_DATA_SWITCH`
 (
     id                        int auto_increment
         primary key,
@@ -83,19 +87,20 @@ create table SNMP_DATA_SWITCH
             on delete cascade
 );
 
-create index switch_id
-    on SNMP_DATA_SWITCH (switch_id);
+CREATE INDEX switch_id
+    ON SNMP_DATA_SWITCH (switch_id);
 
-create index idx_switches_hostname
-    on SWITCHES (hostname);
+CREATE INDEX idx_switches_hostname
+    ON SWITCHES (hostname);
 
-create index idx_switches_ip_address
-    on SWITCHES (ip_address);
+CREATE INDEX idx_switches_ip_address
+    ON SWITCHES (ip_address);
 
-create index idx_switches_location
-    on SWITCHES (location);
+CREATE INDEX idx_switches_location
+    ON SWITCHES (location);
 
-create table USERS
+DROP TABLE IF EXISTS `USERS`;
+CREATE TABLE `USERS`
 (
     id         int auto_increment
         primary key,
@@ -110,10 +115,8 @@ create table USERS
         unique (username)
 );
 
-
-
-
-create table form_fields
+DROP TABLE IF EXISTS `form_fields`;
+CREATE TABLE `form_fields`
 (
     id            int auto_increment
         primary key,
@@ -123,7 +126,8 @@ create table form_fields
     display_order int                  null
 );
 
-create table dynamic_values
+DROP TABLE IF EXISTS `dynamic_values`;
+CREATE TABLE `dynamic_values`
 (
     id            int auto_increment
         primary key,
@@ -138,9 +142,8 @@ create table dynamic_values
             on delete cascade
 );
 
-create index form_field_id
-    on dynamic_values (form_field_id);
+CREATE INDEX form_field_id
+    ON dynamic_values (form_field_id);
 
-create index ip_id
-    on dynamic_values (ip_id);
-
+CREATE INDEX ip_id
+    ON dynamic_values (ip_id);

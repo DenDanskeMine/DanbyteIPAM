@@ -28,16 +28,26 @@ sudo systemctl enable mariadb
 
 # Secure MariaDB installation
 echo "Securing MariaDB installation..."
-sudo mysql_secure_installation
+sudo mysql_secure_installation <<EOF
+
+y
+CHANGEME
+CHANGEME
+y
+y
+y
+y
+EOF
 
 # Create MariaDB user and database
 echo "Creating MariaDB user and database..."
-sudo mysql -u root -p <<MYSQL_SCRIPT
-CREATE DATABASE DANBYTE;
+sudo mysql -u root -psecret <<MYSQL_SCRIPT
+CREATE DATABASE IF NOT EXISTS DANBYTE;
 CREATE USER 'danbyte_admin'@'%' IDENTIFIED BY 'admin';
 GRANT ALL PRIVILEGES ON DANBYTE.* TO 'danbyte_admin'@'%';
 FLUSH PRIVILEGES;
 MYSQL_SCRIPT
+
 
 # Import database schema
 echo "Importing database schema..."
