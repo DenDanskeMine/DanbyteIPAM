@@ -16,6 +16,7 @@ jobs:
     strategy:
       matrix:
         python-version: [3.12.3]
+        allow-prereleases: true
     steps:
       - uses: actions/checkout@v2
       - name: Set up Python ${{ matrix.python-version }}
