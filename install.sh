@@ -16,12 +16,16 @@ sudo systemctl stop mariadb || true
 sudo apt-get remove --purge -y mariadb-server mariadb-client mariadb-common
 sudo apt-get autoremove -y
 sudo apt-get autoclean
-sudo rm -rf /etc/mysql /var/lib/mysql /var/log/mysql
+sudo rm -rf /etc/mysql /var/lib/mysql /var/log/mysql /var/run/mysqld
 
 # Update system and install necessary packages
 echo -e "${BLUE}Updating system and installing dependencies...${NC}"
 sudo apt update
 sudo apt install -y python3-pip python3-venv mariadb-server npm libsnmp-dev snmp-mibs-downloader
+
+# Reconfigure MariaDB
+echo -e "${BLUE}Reconfiguring MariaDB...${NC}"
+sudo dpkg-reconfigure mariadb-server
 
 # Setting up virtual environment and installing Python dependencies
 echo -e "${BLUE}Setting up Python virtual environment...${NC}"
