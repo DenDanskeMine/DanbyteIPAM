@@ -10,6 +10,14 @@ YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
+# Remove any old MariaDB installations and databases
+echo -e "${RED}Removing any old MariaDB installations and databases...${NC}"
+sudo systemctl stop mariadb || true
+sudo apt-get remove --purge -y mariadb-server mariadb-client mariadb-common
+sudo apt-get autoremove -y
+sudo apt-get autoclean
+sudo rm -rf /etc/mysql /var/lib/mysql /var/log/mysql
+
 # Update system and install necessary packages
 echo -e "${BLUE}Updating system and installing dependencies...${NC}"
 sudo apt update
