@@ -5,4 +5,8 @@ venv/
 .vscode-server/
 /venv/
 /venv
+<<<<<<< HEAD
 node_modules/
+=======
+/node_modules/
+>>>>>>> bb594639320bfc332829bfc27ebb730f2487dd66

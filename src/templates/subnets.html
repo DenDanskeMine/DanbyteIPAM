@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="p-4 border-2 border-gray-200 border-dashed rounded-lg dark:border-gray-700">
+    <div class="flex justify-between items-center mb-4">
+        <div class="text-3xl text-gray-400 dark:text-gray-500">
+            Available Subnets
+        </div>
+        <a href="{{ url_for('add_subnet') }}" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
+            Add Subnet
+        </a>
+    </div>
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {% for subnet in subnets %}
+        <a href="{{ url_for('show_subnet_ips', subnet_id=subnet.id) }}" class="block bg-gray-900 dark:bg-gray-800 p-6 rounded-lg shadow hover:bg-gray-800 dark:hover:bg-gray-700">
+            <div class="flex items-center space-x-6">
+                <i class="fa-solid fa-diagram-project text-orange-500 text-5xl"></i>
+                <div class="text-left">
+                    <div class="text-2xl font-semibold text-white">{{ subnet.name }}</div>
+                    <div class="text-lg text-gray-400">{{ subnet.range }}</div>
+                </div>
+            </div>
+        </a>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}
