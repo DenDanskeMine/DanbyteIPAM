@@ -58,15 +58,7 @@ pip install -r requirements.txt
 echo -e "${BLUE}Installing Tailwind CSS and other dependencies...${NC}"
 npm install
 
-# Start MariaDB service
-echo -e "${BLUE}Starting MariaDB service...${NC}"
-sudo systemctl start mariadb || {
-    echo -e "${RED}Failed to start MariaDB service. Checking status...${NC}"
-    sudo systemctl status mariadb
-    echo -e "${RED}Checking journal logs...${NC}"
-    sudo journalctl -xeu mariadb.service
-    exit 1
-}
+
 sudo apt-get purge mariadb-server mariadb-client mariadb-common mariadb-server-core mariadb-client-core
 sudo rm -rf /etc/mysql /var/lib/mysql /var/log/mysql /var/log/mysql.*
 sudo rm -rf /etc/mysql/
