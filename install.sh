@@ -14,7 +14,7 @@ NC='\033[0m' # No Color
 USER_HOME=$(eval echo "~$USER")
 
 # Paths for your project
-PROJECT_DIR="$USER_HOME/FLASK"
+PROJECT_DIR="$USER_HOME/DanbyteIPAM"
 PYTHON_SCRIPT="$PROJECT_DIR/src/snmp_switch.py"
 RUN_SNMP_SCRIPT="$PROJECT_DIR/run_snmp_loop.sh"
 LOG_FILE="$USER_HOME/snmp_log.log"
@@ -87,7 +87,7 @@ while true; do
     python3 "$PYTHON_SCRIPT"
     sleep 20
 done
-EOF
+EOF 
 
 # Make the run_snmp.sh script executable
 chmod +x "$RUN_SNMP_SCRIPT"
