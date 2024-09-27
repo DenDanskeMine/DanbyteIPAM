@@ -11,6 +11,6 @@ while true; do
     deactivate
 
     # Wait for 20 seconds before running the script again
-    sleep 20
+#    sleep 20
 done
 
