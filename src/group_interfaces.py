@@ -56,6 +56,21 @@ def group_interfaces_by_stack(interfaces):
                 grouped_interfaces[key]['odd'].append({'name': name, 'status': status, 'shutdown': shutdown})
         else:
             logging.debug(f"Interface name '{name}' did not match expected patterns.")
+            # Add unmatched interfaces to the default stack
+            stack = 'Spacial Interfaces'
+            key = f"Interface {name}"
+            
+            # Initialize the default stack group if not already present
+            if stack not in stack_groups:
+                stack_groups[stack] = {'odd': [], 'even': []}
+            
+            # Initialize the key in the grouped interfaces if not present
+            if key not in grouped_interfaces:
+                grouped_interfaces[key] = {'odd': [], 'even': []}
+            
+            # Add the interface to both the default stack and grouped interfaces
+            stack_groups[stack]['odd'].append({'name': name, 'status': status, 'shutdown': shutdown})
+            grouped_interfaces[key]['odd'].append({'name': name, 'status': status, 'shutdown': shutdown})
     
     logging.debug(f"Grouped interfaces: {grouped_interfaces}")
     logging.debug(f"Grouped interfaces by stack: {stack_groups}")

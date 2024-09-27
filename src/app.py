@@ -18,6 +18,7 @@ import asyncio
 from asgiref.wsgi import WsgiToAsgi
 from src.subnets import *
 import math
+import asyncio
 # Configure logging
 # Configure logging
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -181,23 +182,39 @@ def index():
 @login_required
 def collect_snmp_data():
     try:
-        snmp_switch()
+        # Use asyncio.run() to execute the async function in a synchronous context
+        asyncio.run(snmp_switch())  
         flash('SNMP data collected successfully!', 'success')
     except Exception as e:
         logging.error(f"Error collecting SNMP data: {e}")
         flash('Error collecting SNMP data. Check logs for details.', 'danger')
+    
+    # Ensure the response is returned synchronously
     return redirect(url_for('index'))
 
-@app.route('/refresh_snmp_data_for_switch/<int:switch_id>')
-@login_required
-def refresh_snmp_data_for_switch_route(switch_id):
-    try:
-        refresh_snmp_data_for_switch(switch_id)
-        flash('SNMP data refreshed successfully!', 'success')
-    except Exception as e:
-        logging.error(f"Error refreshing SNMP data for switch {switch_id}: {e}")
-        flash('Error refreshing SNMP data. Check logs for details.', 'danger')
-    return redirect(url_for('show_switch', switch_id=switch_id))
+
+async def refresh_snmp_data_for_switch(switch_id):
+    conn = await db.get_async_db_connection()
+    async with conn.cursor() as cursor:
+        # Get the IP address and toggle_SNMP value of the switch
+        await cursor.execute('SELECT ip_address, toggle_SNMP FROM SWITCHES WHERE id = %s', (switch_id,))
+        switch = await cursor.fetchone()
+
+        if not switch:
+            logging.error(f"No switch found with id {switch_id}")
+            return
+
+        if switch['toggle_SNMP'] == 0:
+            logging.debug(f"SNMP data collection is disabled for switch_id {switch_id}")
+            return
+
+        ip = switch['ip_address']
+
+    # Gather SNMP data
+    snmp_data = await gather_snmp_data(ip)  # Await the async function
+
+    # Store SNMP data
+    await store_snmp_data(switch_id, snmp_data)  # Await the async function
 
 @app.route('/switch/<int:switch_id>')
 @login_required

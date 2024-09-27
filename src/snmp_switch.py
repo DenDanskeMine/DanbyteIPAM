@@ -2,43 +2,47 @@ import logging
 from easysnmp import Session, EasySNMPTimeoutError
 import src.db as db
 import binascii
+import asyncio
 
 # Configure logging
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
 
-def gather_snmp_data(ip, community='public'):
+async def gather_snmp_data(ip, community='public'):
     try:
-        session = Session(hostname=ip, community=community, version=2)
-
-        # Example OIDs for demonstration purposes
-        numOf_int_oid = '1.3.6.1.2.1.2.1.0'  # Number of interfaces
-        int_names_oid = '1.3.6.1.2.1.2.2.1.2'  # Interface names
-        int_status_oid = '1.3.6.1.2.1.2.2.1.8'  # Interface statuses
-        is_shutdown_oid = '1.3.6.1.2.1.2.2.1.7'  # Interface shutdown status
-        vlan_oid = '1.3.6.1.2.1.17.7.1.4.5.1.1'  # VLAN per interface
-        mac_oid = '1.3.6.1.2.1.2.2.1.6'  # MAC address per interface
-
-        # Collect SNMP data
-        numOf_int = session.get(numOf_int_oid).value
-        int_names = [item.value for item in session.walk(int_names_oid)]
-        int_status = [item.value for item in session.walk(int_status_oid)]
-        is_shutdown = [item.value for item in session.walk(is_shutdown_oid)]
-        vlan = [item.value for item in session.walk(vlan_oid)]
-        mac = [item.value for item in session.walk(mac_oid)]
-
-        logging.debug(f"SNMP Data for IP {ip}: numOf_int={numOf_int}, int_names={int_names}, int_status={int_status}, is_shutdown={is_shutdown}, vlan={vlan}, mac={mac}")
-
-        return {
-            'numOf_int': numOf_int,
-            'int_names': ','.join(int_names),  # Store as comma-separated values
-            'int_status': ','.join(int_status),  # Store as comma-separated values
-            'is_shutdown': ','.join(is_shutdown),  # Store as comma-separated values for each interface
-            'vlan': ','.join(vlan),  # Store as comma-separated values
-            'mac': format_mac_addresses(mac)  # Store as comma-separated hex values
-        }
+        # Use asyncio.to_thread to run the blocking SNMP session in an async manner
+        snmp_data = await asyncio.to_thread(run_snmp_session, ip, community)
+        return snmp_data
     except EasySNMPTimeoutError as e:
         logging.error(f"Error collecting SNMP data from {ip}: {e}")
         return None
+
+def run_snmp_session(ip, community):
+    session = Session(hostname=ip, community=community, version=2)
+    
+    # Example OIDs
+    numOf_int_oid = '1.3.6.1.2.1.2.1.0'
+    int_names_oid = '1.3.6.1.2.1.2.2.1.2'
+    int_status_oid = '1.3.6.1.2.1.2.2.1.8'
+    is_shutdown_oid = '1.3.6.1.2.1.2.2.1.7'
+    vlan_oid = '1.3.6.1.2.1.17.7.1.4.5.1.1'
+    mac_oid = '1.3.6.1.2.1.2.2.1.6'
+
+    # Collect SNMP data
+    numOf_int = session.get(numOf_int_oid).value
+    int_names = [item.value for item in session.walk(int_names_oid)]
+    int_status = [item.value for item in session.walk(int_status_oid)]
+    is_shutdown = [item.value for item in session.walk(is_shutdown_oid)]
+    vlan = [item.value for item in session.walk(vlan_oid)]
+    mac = [item.value for item in session.walk(mac_oid)]
+
+    return {
+        'numOf_int': numOf_int,
+        'int_names': ','.join(int_names),
+        'int_status': ','.join(int_status),
+        'is_shutdown': ','.join(is_shutdown),
+        'vlan': ','.join(vlan),
+        'mac': format_mac_addresses(mac)
+    }
 
 def format_mac_addresses(mac_list):
     return ','.join(binascii.hexlify(mac.encode()).decode() for mac in mac_list)
@@ -59,6 +63,8 @@ def store_snmp_data(switch_id, snmp_data):
             mac_data = mac_data[:max_mac_length]
             logging.warning(f"MAC data truncated for switch_id {switch_id}")
 
+        # Log the SQL query to check data insertion
+        logging.debug(f"Executing SQL to store data: {snmp_data}")
         cursor.execute('''
             INSERT INTO SNMP_DATA_SWITCH (switch_id, numOf_int, int_names, int_status, interface_shutdown_status, vlan, mac)
             VALUES (%s, %s, %s, %s, %s, %s, %s)
@@ -71,6 +77,7 @@ def store_snmp_data(switch_id, snmp_data):
                 mac = VALUES(mac)
         ''', (switch_id, snmp_data['numOf_int'], snmp_data['int_names'], snmp_data['int_status'], snmp_data['is_shutdown'], snmp_data['vlan'], mac_data))
         conn.commit()
+        logging.debug(f"Successfully inserted SNMP data for switch_id {switch_id}")
     except Exception as e:
         logging.error(f"Error storing SNMP data: {e}")
         raise
@@ -78,25 +85,30 @@ def store_snmp_data(switch_id, snmp_data):
         cursor.close()
         conn.close()
 
-def snmp_switch():
-    conn = db.get_db_connection()
-    cursor = conn.cursor(dictionary=True)
-    cursor.execute('SELECT * FROM SWITCHES')
-    switches = cursor.fetchall()
-    cursor.close()
-    conn.close()
+async def snmp_switch():
+    # Use the async fetch_switches to get the data
+    switches = await db.fetch_switches()
 
     for switch in switches:
         if switch['toggle_SNMP'] == 1:
             ip = switch['ip_address']
             switch_id = switch['id']
-            snmp_data = gather_snmp_data(ip)
-            store_snmp_data(switch_id, snmp_data)
+
+            # Collect SNMP data asynchronously
+            snmp_data = await gather_snmp_data(ip)
+
+            # Log if SNMP data was gathered
+            if snmp_data is not None:
+                logging.debug(f"SNMP Data collected for switch {switch_id}: {snmp_data}")
+                store_snmp_data(switch_id, snmp_data)  # Sync call, so no await here
+            else:
+                logging.error(f"No SNMP data was collected for switch_id {switch_id}")
         else:
             logging.debug(f"SNMP data collection is disabled for switch_id {switch['id']}")
 
     return switches
 
+# For synchronous refresh of specific switch SNMP data
 def refresh_snmp_data_for_switch(switch_id):
     conn = db.get_db_connection()
     cursor = conn.cursor(dictionary=True)
@@ -117,8 +129,8 @@ def refresh_snmp_data_for_switch(switch_id):
     cursor.close()
     conn.close()
     
-    # Gather SNMP data
+    # Gather SNMP data synchronously
     snmp_data = gather_snmp_data(ip)
     
-    # Store SNMP data
+    # Store SNMP data synchronously
     store_snmp_data(switch_id, snmp_data)

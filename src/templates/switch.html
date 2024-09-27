@@ -18,6 +18,9 @@
             <div class="text-2xl font-semibold text-white">{{ switch.hostname or 'Problems?'}}</div>
             <div class="text-lg text-gray-400">{{ switch.ip_address or 'Not available' }}</div>
             <div class="text-lg text-gray-400">{{ switch.location or 'Unknown' }}</div>
+            <div class="text-lg text-gray-400">{{ switch.community or 'Unknown' }}</div>
+            <div class="text-lg text-gray-400">{{ switch.model or 'Unknown' }}</div>
+            <div class="text-lg text-gray-400">{{ switch.firmware_version or 'Unknown' }}</div>
         </div>
         <button onclick="openEditModal({{ switch.id }})" class="text-gray-400 hover:text-gray-200">
             <i class="fa-solid fa-edit"></i>
@@ -25,90 +28,188 @@
     </div>
 </div>
 
-<!-- Display stack groups -->
+
+<!-- Display switch groups in separate "switch" boxes -->
 <div class="flex flex-col gap-y-4 mt-4">
     {% for stack, groups in stack_groups.items() %}
-        <div class="flex flex-col items-start mb-4">
-            <h4 class="text-lg font-semibold text-white">{{ stack }}</h4>
-            <div class="flex space-x-1 mb-1">
-                {% for interface in groups.odd %}
-                    <div class="relative">
-                        <button data-popover-target="popover-{{ interface.name }}" data-popover-placement="right" type="button" class="status-box 
-                            {% if interface.shutdown == '2' %} bg-gray-500 
-                            {% elif interface.status == '1' %} bg-green-500 
-                            {% elif interface.status == '2' %} bg-red-500 
-                            {% else %} bg-gray-500 {% endif %} 
-                            text-white font-bold rounded flex items-center justify-center w-8 h-8">
-                            {{ interface.name.split('/')[-1] }} <!-- Only display the interface number -->
-                        </button>
-                        <div data-popover id="popover-{{ interface.name }}" role="tooltip" class="absolute z-10 invisible w-64 text-sm text-gray-500 transition-opacity duration-300 bg-white border border-gray-200 rounded-lg shadow-sm opacity-0 dark:text-gray-400 dark:border-gray-600 dark:bg-gray-800">
-                            <div class="px-3 py-2 bg-gray-100 border-b border-gray-200 rounded-t-lg dark:border-gray-600 dark:bg-gray-700">
-                                <h3 class="font-semibold text-gray-900 dark:text-white">Interface Details</h3>
-                            </div>
-                            <div class="px-3 py-2">
-                                <p>Name: {{ interface.name }}</p>
-                                <p>VLAN: {{ interface.vlan }}</p>
-                                <p>MAC: {{ interface.mac }}</p>
-                            </div>
-                            <div data-popper-arrow></div>
-                        </div>
+    <!-- Switch Box for each stack -->
+    <div class="switch-box flex flex-col gap-y-2 border border-gray-700 rounded-lg p-4">
+        <h4 class="text-lg font-semibold text-white">{{ stack }}</h4>
+
+        <!-- First Row with Number on Top -->
+        <div class="flex space-x-1 mb-1">
+            {% for interface in groups.odd %}
+            <div class="interface-container">
+                <!-- Determine if the interface name after the slash is more than 3 characters -->
+                {% set interface_suffix = interface.name.split('/')[-1] %}
+                {% if interface_suffix|length > 2 %}
+                <!-- Long Interface Button -->
+                <button data-popover-target="popover-{{ interface.name }}" data-popover-placement="right" type="button"
+                    class="status-box-long rounded shadow
+                                {% if interface.shutdown == '2' %} bg-red-500 
+                                {% elif interface.status == '1' %} bg-green-400 
+                                {% elif interface.status == '2' %} bg-gray-500 
+                                {% else %} bg-gray-500 {% endif %}">
+
+                    <!-- Ethernet Icon -->
+                    <div class="icon-box">
+                        <i class="fas fa-ethernet ethernet-icon
+                                        {% if interface.shutdown == '2' %} text-red-900 
+                                        {% elif interface.status == '1' %} text-green-900
+                                        {% elif interface.status == '2' %} text-gray-900
+                                        {% else %} text-gray-900 {% endif %}">
+                        </i>
                     </div>
-                {% endfor %}
-            </div>
-            <div class="flex space-x-1">
-                {% for interface in groups.even %}
-                    <div class="relative">
-                        <button data-popover-target="popover-{{ interface.name }}" data-popover-placement="right" type="button" class="status-box 
-                            {% if interface.shutdown == '2' %} bg-gray-500 
-                            {% elif interface.status == '1' %} bg-green-500 
-                            {% elif interface.status == '2' %} bg-red-500 
-                            {% else %} bg-gray-500 {% endif %} 
-                            text-white font-bold rounded flex items-center justify-center w-8 h-8">
-                            {{ interface.name.split('/')[-1] }} <!-- Only display the interface number -->
-                        </button>
-                        <div data-popover id="popover-{{ interface.name }}" role="tooltip" class="absolute z-10 invisible w-64 text-sm text-gray-500 transition-opacity duration-300 bg-white border border-gray-200 rounded-lg shadow-sm opacity-0 dark:text-gray-400 dark:border-gray-600 dark:bg-gray-800">
-                            <div class="px-3 py-2 bg-gray-100 border-b border-gray-200 rounded-t-lg dark:border-gray-600 dark:bg-gray-700">
-                                <h3 class="font-semibold text-gray-900 dark:text-white">Interface Details</h3>
-                            </div>
-                            <div class="px-3 py-2">
-                                <p>Name: {{ interface.name }}</p>
-                                <p>VLAN: {{ interface.sttaus }}</p>
-                                <p>MAC: {{ interface.mac }}</p>
-                            </div>
-                            <div data-popper-arrow></div>
-                        </div>
+
+                    <!-- Large interface name -->
+                    <div class="interface-name-long">{{ interface.name }}</div>
+                </button>
+                {% else %}
+                <!-- Small Interface Button (Number on Top) -->
+                <div class="number-top">{{ interface_suffix }}</div>
+                <button data-popover-target="popover-{{ interface.name }}" data-popover-placement="right" type="button"
+                    class="status-box rounded shadow
+                                {% if interface.shutdown == '2' %} bg-red-500 
+                                {% elif interface.status == '1' %} bg-green-400 
+                                {% elif interface.status == '2' %} bg-gray-500 
+                                {% else %} bg-gray-500 {% endif %}">
+
+                    <!-- Icon container -->
+                    <div class="icon-box">
+                        <i class="fas fa-ethernet ethernet-icon
+                                        {% if interface.shutdown == '2' %} text-red-900 
+                                        {% elif interface.status == '1' %} text-green-900
+                                        {% elif interface.status == '2' %} text-gray-900
+                                        {% else %} text-gray-900 {% endif %}">
+                        </i>
                     </div>
-                {% endfor %}
+                </button>
+                {% endif %}
+
+                <!-- Popover for details with table structure -->
+                <div data-popover id="popover-{{ interface.name }}" role="tooltip"
+                    class="absolute z-10 invisible w-64 text-sm text-gray-500 transition-opacity duration-300 bg-white border border-gray-200 rounded-lg shadow-sm opacity-0 dark:text-gray-400 dark:border-gray-600 dark:bg-gray-800">
+                    <div class="px-3 py-2">
+                        <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-600">
+                            <tbody class="bg-white dark:bg-gray-800">
+                                <tr>
+                                    <td class="font-semibold text-gray-900 dark:text-white">Name:</td>
+                                    <td class="text-gray-600 dark:text-gray-300">{{ interface.name }}</td>
+                                </tr>
+                                <tr>
+                                    <td class="font-semibold text-gray-900 dark:text-white">VLAN:</td>
+                                    <td class="text-gray-600 dark:text-gray-300">{{ interface.vlan or 'N/A' }}</td>
+                                </tr>
+                                <tr>
+                                    <td class="font-semibold text-gray-900 dark:text-white">MAC:</td>
+                                    <td class="text-gray-600 dark:text-gray-300">{{ interface.mac or 'N/A' }}</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div data-popper-arrow></div>
+                </div>
+
+
             </div>
+            {% endfor %}
         </div>
+
+        <!-- Second Row with Number on Bottom -->
+        <div class="flex space-x-1">
+            {% for interface in groups.even %}
+            <div class="interface-container">
+                <!-- Determine if the interface name after the slash is more than 3 characters -->
+                {% set interface_suffix = interface.name.split('/')[-1] %}
+                {% if interface_suffix|length > 2 %}
+                <!-- Long Interface Button -->
+                <button data-popover-target="popover-{{ interface.name }}" data-popover-placement="right" type="button"
+                    class="status-box-long rounded shadow
+                                {% if interface.shutdown == '2' %} bg-red-500 
+                                {% elif interface.status == '1' %} bg-green-400 
+                                {% elif interface.status == '2' %} bg-gray-500 
+                                {% else %} bg-gray-500 {% endif %}">
+
+                    <!-- Ethernet Icon -->
+                    <div class="icon-box">
+                        <i class="fas fa-ethernet ethernet-icon transform rotate-180
+                        {% if interface.shutdown == '2' %} text-red-900 
+                        {% elif interface.status == '1' %} text-green-900
+                        {% elif interface.status == '2' %} text-gray-900
+                        {% else %} text-gray-900 {% endif %}">
+                    </i>
+                    </div>
+
+                    <!-- Large interface name -->
+                    <div class="interface-name-long">{{ interface.name }}</div>
+                </button>
+                {% else %}
+                <!-- Small Interface Button (Number on Bottom) -->
+                <button data-popover-target="popover-{{ interface.name }}" data-popover-placement="right" type="button"
+                    class="status-box rounded shadow
+                                {% if interface.shutdown == '2' %} bg-red-500 
+                                {% elif interface.status == '1' %} bg-green-400 
+                                {% elif interface.status == '2' %} bg-gray-500 
+                                {% else %} bg-gray-500 {% endif %}">
+
+                    <!-- Icon container -->
+                    <div class="icon-box">
+                        <i class="fas fa-ethernet ethernet-icon transform rotate-180
+                        {% if interface.shutdown == '2' %} text-red-900 
+                        {% elif interface.status == '1' %} text-green-900
+                        {% elif interface.status == '2' %} text-gray-900
+                        {% else %} text-gray-900 {% endif %}">
+                    </i>
+                    </div>
+                </button>
+                <!-- Number below the icon -->
+                <div class="number-bottom">{{ interface_suffix }}</div>
+                {% endif %}
+
+                <!-- Popover for details with table structure -->
+                <div data-popover id="popover-{{ interface.name }}" role="tooltip"
+                    class="absolute z-10 invisible w-64 text-sm text-gray-500 transition-opacity duration-300 bg-white border border-gray-200 rounded-lg shadow-sm opacity-0 dark:text-gray-400 dark:border-gray-600 dark:bg-gray-800">
+                    <div class="px-3 py-2">
+                        <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-600">
+                            <tbody class="bg-white dark:bg-gray-800">
+                                <tr>
+                                    <td class="font-semibold text-gray-900 dark:text-white">Name:</td>
+                                    <td class="text-gray-600 dark:text-gray-300">{{ interface.name }}</td>
+                                </tr>
+                                <tr>
+                                    <td class="font-semibold text-gray-900 dark:text-white">VLAN:</td>
+                                    <td class="text-gray-600 dark:text-gray-300">{{ interface.vlan or 'N/A' }}</td>
+                                </tr>
+                                <tr>
+                                    <td class="font-semibold text-gray-900 dark:text-white">MAC:</td>
+                                    <td class="text-gray-600 dark:text-gray-300">{{ interface.mac or 'N/A' }}</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div data-popper-arrow></div>
+                </div>
+
+            </div>
+            {% endfor %}
+        </div>
+    </div>
     {% endfor %}
 </div>
 
 
-<!-- Modal Structure -->
-<div id="interfaceModal" class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 hidden">
-    <div class="bg-white dark:bg-gray-800 rounded-lg p-4 max-w-md w-full">
-        <div class="flex justify-between items-center mb-4">
-            <h3 class="text-lg font-semibold text-white">Interface Details</h3>
-            <button onclick="closeModal()" class="text-gray-500 hover:text-gray-700 dark:hover:text-gray-300">&times;</button>
-        </div>
-        <div id="modalContent" class="text-gray-700 dark:text-gray-300">
-            <!-- Interface details will be inserted here -->
-        </div>
-        <div class="flex justify-end mt-4">
-            <button onclick="closeModal()" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-700">Close</button>
-        </div>
-    </div>
-</div>
+
 
 <!-- Switch modal -->
 <!-- Modal toggle -->
 <div class="flex justify-center m-5">
-    <button id="updateSwitchButton" data-modal-target="updateSwitchModal" data-modal-toggle="updateSwitchModal" class="hidden"></button>
+    <button id="updateSwitchButton" data-modal-target="updateSwitchModal" data-modal-toggle="updateSwitchModal"
+        class="hidden"></button>
 </div>
 
 <!-- Main modal -->
-<div id="updateSwitchModal" tabindex="-1" aria-hidden="true" class="hidden overflow-y-auto overflow-x-hidden fixed top-0 right-0 left-0 z-50 justify-center items-center w-full md:inset-0 h-modal md:h-full">
+<div id="updateSwitchModal" tabindex="-1" aria-hidden="true"
+    class="hidden overflow-y-auto overflow-x-hidden fixed top-0 right-0 left-0 z-50 justify-center items-center w-full md:inset-0 h-modal md:h-full">
     <div class="relative p-4 w-full max-w-2xl h-full md:h-auto">
         <!-- Modal content -->
         <div class="relative p-4 bg-white rounded-lg shadow dark:bg-gray-800 sm:p-5">
@@ -117,8 +218,15 @@
                 <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
                     Update Switch
                 </h3>
-                <button type="button" class="text-gray-400 bg-transparent hover:bg-gray-200 hover:text-gray-900 rounded-lg text-sm p-1.5 ml-auto inline-flex items-center dark:hover:bg-gray-600 dark:hover:text-white" data-modal-toggle="updateSwitchModal">
-                    <svg aria-hidden="true" class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"></path></svg>
+                <button type="button"
+                    class="text-gray-400 bg-transparent hover:bg-gray-200 hover:text-gray-900 rounded-lg text-sm p-1.5 ml-auto inline-flex items-center dark:hover:bg-gray-600 dark:hover:text-white"
+                    data-modal-toggle="updateSwitchModal">
+                    <svg aria-hidden="true" class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"
+                        xmlns="http://www.w3.org/2000/svg">
+                        <path fill-rule="evenodd"
+                            d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
+                            clip-rule="evenodd"></path>
+                    </svg>
                     <span class="sr-only">Close modal</span>
                 </button>
             </div>
@@ -126,48 +234,78 @@
             <form id="updateSwitchForm" action="{{ url_for('edit_switch', switch_id=switch.id) }}" method="post">
                 <div class="grid gap-4 mb-4 sm:grid-cols-2">
                     <div>
-                        <label for="hostname" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Hostname</label>
-                        <input type="text" name="hostname" id="hostname" value="{{ switch.hostname }}" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500">
+                        <label for="hostname"
+                            class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Hostname</label>
+                        <input type="text" name="hostname" id="hostname" value="{{ switch.hostname }}"
+                            class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500">
                     </div>
                     <div>
-                        <label for="ip_address" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">IP Address</label>
-                        <input type="text" name="ip_address" id="ip_address" value="{{ switch.ip_address }}" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500">
+                        <label for="ip_address" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">IP
+                            Address</label>
+                        <input type="text" name="ip_address" id="ip_address" value="{{ switch.ip_address }}"
+                            class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500">
                     </div>
                     <div>
-                        <label for="location" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Location</label>
-                        <input type="text" name="location" id="location" value="{{ switch.location }}" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500">
+                        <label for="location"
+                            class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Location</label>
+                        <input type="text" name="location" id="location" value="{{ switch.location }}"
+                            class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500">
                     </div>
                     <div>
-                        <label for="community" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Community</label>
-                        <input type="text" name="community" id="community" value="{{ switch.community }}" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500">
+                        <label for="community"
+                            class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Community</label>
+                        <input type="text" name="community" id="community" value="{{ switch.community }}"
+                            class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500">
                     </div>
                     <div>
-                        <label for="model" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Model</label>
-                        <input type="text" name="model" id="model" value="{{ switch.model }}" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500">
+                        <label for="model"
+                            class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Model</label>
+                        <input type="text" name="model" id="model" value="{{ switch.model }}"
+                            class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500">
                     </div>
                     <div>
-                        <label for="firmware_version" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Firmware Version</label>
-                        <input type="text" name="firmware_version" id="firmware_version" value="{{ switch.firmware_version }}" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500">
+                        <label for="firmware_version"
+                            class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Firmware
+                            Version</label>
+                        <input type="text" name="firmware_version" id="firmware_version"
+                            value="{{ switch.firmware_version }}"
+                            class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500">
                     </div>
                     <div>
-                        <label for="port_count" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Port Count</label>
-                        <input type="number" name="port_count" id="port_count" value="{{ switch.port_count }}" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500">
+                        <label for="port_count"
+                            class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Port Count</label>
+                        <input type="number" name="port_count" id="port_count" value="{{ switch.port_count }}"
+                            class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500">
                     </div>
                     <div>
-                        <label for="is_online" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Is Online</label>
-                        <input type="checkbox" name="is_online" id="is_online" {% if switch.is_online %}checked{% endif %} class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500">
+                        <label for="is_online" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Is
+                            Online</label>
+                        <input type="checkbox" name="is_online" id="is_online" {% if switch.is_online %}checked{% endif
+                            %}
+                            class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500">
                     </div>
                     <div>
-                        <label for="is_favorite" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Is Favorite</label>
-                        <input type="checkbox" name="is_favorite" id="is_favorite" {% if switch.is_favorite %}checked{% endif %} class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500">
+                        <label for="is_favorite" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Is
+                            Favorite</label>
+                        <input type="checkbox" name="is_favorite" id="is_favorite" {% if switch.is_favorite %}checked{%
+                            endif %}
+                            class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500">
                     </div>
                 </div>
                 <div class="flex items-center space-x-4">
-                    <button type="submit" class="text-white bg-primary-700 hover:bg-primary-800 focus:ring-4 focus:outline-none focus:ring-primary-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center dark:bg-primary-600 dark:hover:bg-primary-700 dark:focus:ring-primary-800">
+                    <button type="submit"
+                        class="text-white bg-primary-700 hover:bg-primary-800 focus:ring-4 focus:outline-none focus:ring-primary-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center dark:bg-primary-600 dark:hover:bg-primary-700 dark:focus:ring-primary-800">
                         Update Switch
                     </button>
-                    <button type="button" class="text-red-600 inline-flex items-center hover:text-white border border-red-600 hover:bg-red-600 focus:ring-4 focus:outline-none focus:ring-red-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center dark:border-red-500 dark:text-red-500 dark:hover:text-white dark:hover:bg-red-600 dark:focus:ring-red-900" data-modal-toggle="updateSwitchModal">
-                        <svg class="mr-1 -ml-1 w-5 h-5" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd"></path></svg>
+                    <button type="button"
+                        class="text-red-600 inline-flex items-center hover:text-white border border-red-600 hover:bg-red-600 focus:ring-4 focus:outline-none focus:ring-red-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center dark:border-red-500 dark:text-red-500 dark:hover:text-white dark:hover:bg-red-600 dark:focus:ring-red-900"
+                        data-modal-toggle="updateSwitchModal">
+                        <svg class="mr-1 -ml-1 w-5 h-5" fill="currentColor" viewBox="0 0 20 20"
+                            xmlns="http://www.w3.org/2000/svg">
+                            <path fill-rule="evenodd"
+                                d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z"
+                                clip-rule="evenodd"></path>
+                        </svg>
                         Cancel
                     </button>
                 </div>
@@ -176,6 +314,47 @@
     </div>
 </div>
 
+<!-- Modal Structure -->
+<div id="interfaceModal" class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 hidden">
+    <div class="bg-white dark:bg-gray-800 rounded-lg p-4 max-w-md w-full">
+        <div class="flex justify-between items-center mb-2">
+            <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Interface Details</h3>
+            <button onclick="closeModal()" class="text-gray-500 hover:text-gray-700 dark:hover:text-gray-300">&times;</button>
+        </div>
+
+        <!-- Compact Table Structure -->
+        <div class="p-2">
+            <table class="w-full text-sm text-left text-gray-500 dark:text-gray-400">
+                <tbody>
+                    <tr class="border-b dark:border-gray-700">
+                        <th scope="row" class="px-4 py-2 font-medium text-gray-900 whitespace-nowrap dark:text-white">
+                            Name:
+                        </th>
+                        <td id="modal-interface-name" class="px-4 py-2">N/A</td>
+                    </tr>
+                    <tr class="border-b dark:border-gray-700">
+                        <th scope="row" class="px-4 py-2 font-medium text-gray-900 whitespace-nowrap dark:text-white">
+                            VLAN:
+                        </th>
+                        <td id="modal-interface-vlan" class="px-4 py-2">N/A</td>
+                    </tr>
+                    <tr>
+                        <th scope="row" class="px-4 py-2 font-medium text-gray-900 whitespace-nowrap dark:text-white">
+                            MAC:
+                        </th>
+                        <td id="modal-interface-mac" class="px-4 py-2">N/A</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="flex justify-end mt-4">
+            <button onclick="closeModal()" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-700">Close</button>
+        </div>
+    </div>
+</div>
+
+
 <script>
     function openEditModal(switchId) {
         document.getElementById('updateSwitchButton').click();
@@ -183,7 +362,7 @@
         form.action = `/edit_switch/${switchId}`;
     }
 
-    document.addEventListener("DOMContentLoaded", function(event) {
+    document.addEventListener("DOMContentLoaded", function (event) {
         document.getElementById('updateSwitchButton').click();
     });
 </script>
@@ -195,7 +374,7 @@
         form.action = `/edit_switch/${switchId}`;
     }
 
-    document.addEventListener("DOMContentLoaded", function(event) {
+    document.addEventListener("DOMContentLoaded", function (event) {
         document.getElementById('updateSwitchButton').click();
     });
 
@@ -241,5 +420,70 @@
         }
     });
 </script>
+
+
+<script>
+    // Function to open the modal and insert table content
+    function openModal(name, vlan, mac) {
+        // Set the content of the modal using table cells
+        document.getElementById('modal-interface-name').textContent = name || 'N/A';
+        document.getElementById('modal-interface-vlan').textContent = vlan || 'N/A';
+        document.getElementById('modal-interface-mac').textContent = mac || 'N/A';
+
+        // Show the modal
+        const modal = document.getElementById('interfaceModal');
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+    }
+
+    // Function to close the modal
+    function closeModal() {
+        const modal = document.getElementById('interfaceModal');
+        modal.classList.remove('flex');
+        modal.classList.add('hidden');
+    }
+
+    document.addEventListener("DOMContentLoaded", function () {
+        // Attach event listeners to each button
+        document.querySelectorAll('[data-popover-target]').forEach(button => {
+            button.addEventListener('click', event => {
+                event.stopPropagation(); // Prevent document click from closing modal
+
+                const popoverId = event.currentTarget.getAttribute('data-popover-target');
+                const popover = document.getElementById(popoverId);
+
+                // Debugging to ensure the popover is found
+                if (!popover) {
+                    console.error(`Popover with ID ${popoverId} not found`);
+                    return;
+                }
+
+                // Extract data from the popover's table
+                const rows = popover.querySelectorAll('table tbody tr');
+                if (rows.length >= 3) {
+                    const name = rows[0].querySelector('td:nth-child(2)').textContent || 'N/A';
+                    const vlan = rows[1].querySelector('td:nth-child(2)').textContent || 'N/A';
+                    const mac = rows[2].querySelector('td:nth-child(2)').textContent || 'N/A';
+
+                    // Open the modal and insert the popover data
+                    openModal(name, vlan, mac);
+                } else {
+                    console.error('Popover table structure is unexpected or missing rows');
+                }
+            });
+        });
+
+        // Close modal if clicked outside of the modal
+        document.addEventListener('click', function (event) {
+            const modal = document.getElementById('interfaceModal');
+            if (!modal.contains(event.target) && !event.target.closest('[data-popover-target]')) {
+                closeModal();
+            }
+        });
+    });
+</script>
+
+
+
 
 {% endblock %}

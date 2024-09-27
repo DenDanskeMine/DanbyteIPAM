@@ -10,6 +10,15 @@ YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
+# Get the current user's home directory
+USER_HOME=$(eval echo "~$USER")
+
+# Paths for your project
+PROJECT_DIR="$USER_HOME/FLASK"
+PYTHON_SCRIPT="$PROJECT_DIR/src/snmp_switch.py"
+RUN_SNMP_SCRIPT="$PROJECT_DIR/run_snmp_loop.sh"
+LOG_FILE="$USER_HOME/snmp_log.log"
+
 # Update system and install necessary packages
 echo -e "${BLUE}Updating system and installing dependencies...${NC}"
 sudo apt update
@@ -21,16 +30,16 @@ sudo dpkg-reconfigure mariadb-server
 
 # Setting up virtual environment and installing Python dependencies
 echo -e "${BLUE}Setting up Python virtual environment...${NC}"
-python3 -m venv venv
-source venv/bin/activate
+python3 -m venv "$PROJECT_DIR/venv"
+source "$PROJECT_DIR/venv/bin/activate"
 
 # Install Python dependencies
 echo -e "${BLUE}Installing Python dependencies...${NC}"
-pip install -r requirements.txt
+pip install -r "$PROJECT_DIR/requirements.txt"
 
 # Install Tailwind CSS dependencies using npm
 echo -e "${BLUE}Installing Tailwind CSS and other dependencies...${NC}"
-npm install
+npm install --prefix "$PROJECT_DIR"
 
 # Start MariaDB service
 echo -e "${BLUE}Starting MariaDB service...${NC}"
@@ -62,18 +71,33 @@ MYSQL_SCRIPT
 
 # Import database schema
 echo -e "${BLUE}Importing database schema...${NC}"
-mysql -u danbyte_admin -padmin DANBYTE < database.sql
+mysql -u danbyte_admin -padmin DANBYTE < "$PROJECT_DIR/database.sql"
 
 # Deactivate virtual environment
 deactivate
 
 # Tailwind CSS build (Optional, if required in your project)
 echo -e "${BLUE}Entering venv${NC}"
-source venv/bin/activate
+source "$PROJECT_DIR/venv/bin/activate"
+
+# Create the dynamic run_snmp.sh script to run SNMP collection every 20 seconds
+cat <<EOF > "$RUN_SNMP_SCRIPT"
+#!/bin/bash
+while true; do
+    python3 "$PYTHON_SCRIPT"
+    sleep 20
+done
+EOF
+
+# Make the run_snmp.sh script executable
+chmod +x "$RUN_SNMP_SCRIPT"
+
+# Add cron job to run the SNMP collection script at boot
+echo -e "${BLUE}Adding cron job to run SNMP script at boot...${NC}"
+(crontab -l ; echo "@reboot $RUN_SNMP_SCRIPT > $LOG_FILE 2>&1") | crontab -
 
 # Final messages
 echo -e "${GREEN}Installation completed!${NC}"
-source venv/bin/activate
 echo -e "${YELLOW}Run the following command to start the application:${NC}"
 echo " "
 echo -e "${BLUE}uvicorn src.app:asgi_app --host 0.0.0.0 --port 8000 --reload${NC}"

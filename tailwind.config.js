@@ -4,8 +4,8 @@
 module.exports = {
   darkMode: 'media',
   content: [
-    './templates/**/*.html',
-    './static/**/*.js',
+    './src/templates/**/*.html',
+    './src/static/**/*.js',
     // Include any other paths to your templates and scripts
     './node_modules/flowbite/**/*.js'
   ],
